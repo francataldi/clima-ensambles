@@ -7,9 +7,11 @@ model:
   num_blocks: 4
   patch: 2
   dropout: 0.1
+  noise_channels: 2
 stages:
   - {rollout: 1, epochs: 2, lr: 0.001}
   - {rollout: 2, epochs: 1, lr: 0.0003}
+  - {rollout: 2, epochs: 2, lr: 0.0003, loss: crps, members: 2}
 batch_size: 8
 num_workers: 0
 steps_per_epoch: 40

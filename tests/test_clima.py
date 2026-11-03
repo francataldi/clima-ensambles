@@ -151,3 +151,50 @@ def test_train_smoke_and_reload(store, tmp_path):
     x = torch.randn(1, len(store.names), 32, 64)
     f = torch.randn(1, N_DYNAMIC, 32, 64)
     assert torch.allclose(again.step(x, f), reloaded.eval().step(x, f))
+
+
+def test_fair_crps_matches_numpy():
+    from clima.metrics import crps_ensemble
+    from clima.noise import fair_crps
+
+    rng = np.random.default_rng(3)
+    members = rng.normal(size=(5, 4, 6))
+    truth = rng.normal(size=(4, 6))
+    torch_value = fair_crps(torch.from_numpy(members), torch.from_numpy(truth)).numpy().mean()
+    w = np.ones(4)
+    assert np.isclose(torch_value, crps_ensemble(members, truth, w).mean())
+
+
+def test_stochastic_model_spreads_without_ic_noise(store):
+    cfg = AFNOConfig(dim=16, depth=1, num_blocks=2, patch=2, noise_channels=2)
+    model = Forecaster.from_store(store, cfg).eval()
+    with torch.no_grad():
+        for p in model.net.head.parameters():
+            p.normal_(0, 0.05)
+    x0 = torch.randn(len(store.names), 32, 64)
+    forc = torch.from_numpy(dynamic_forcings(store, np.arange(0, 3)))
+    traj = run_ensemble([model], x0, forc, EnsembleConfig(members=4, ic_scale=0.0, batch=4), seed=1)
+    det = model.rollout(x0.unsqueeze(0), forc.unsqueeze(0))[0]
+    assert torch.allclose(traj[0], det, atol=1e-5)
+    assert traj[1:, -1].std(0).mean() > 0
+
+
+def test_crps_stage_trains(store, tmp_path):
+    cfg = TrainConfig(
+        data_dir=str(store.root),
+        train_range=("2018-01-01", "2018-02-28T18"),
+        val_range=("2018-03-01", "2018-03-31T18"),
+        model=AFNOConfig(dim=16, depth=1, num_blocks=2, patch=2, noise_channels=2).to_dict(),
+        stages=[{"rollout": 1, "epochs": 1, "lr": 1e-3}, {"rollout": 2, "epochs": 1, "lr": 1e-4, "loss": "crps", "members": 2}],
+        batch_size=4,
+        num_workers=0,
+        steps_per_epoch=2,
+        val_batches=2,
+        warmup_steps=2,
+        amp=False,
+        device="cpu",
+        out_dir=str(tmp_path / "crps"),
+    )
+    model, extra = load_forecaster(train(cfg))
+    assert model.stochastic
+    assert "val_crps" in extra

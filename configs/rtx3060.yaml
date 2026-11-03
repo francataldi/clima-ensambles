@@ -9,10 +9,13 @@ model:
   mlp_ratio: 4.0
   dropout: 0.1
   drop_path: 0.05
+  noise_channels: 4
+  noise_length_scale: 6.0
 stages:
   - {rollout: 1, epochs: 40, lr: 0.0005}
   - {rollout: 2, epochs: 6, lr: 0.0001}
   - {rollout: 4, epochs: 4, lr: 0.00005}
+  - {rollout: 2, epochs: 6, lr: 0.00005, loss: crps, members: 2}
 batch_size: 16
 num_workers: 4
 val_batches: 40

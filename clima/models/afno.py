@@ -18,6 +18,8 @@ class AFNOConfig:
     drop_path: float = 0.0
     sparsity: float = 0.01
     mode_fraction: float = 1.0
+    noise_channels: int = 0
+    noise_length_scale: float = 6.0
 
     def to_dict(self) -> dict:
         return asdict(self)

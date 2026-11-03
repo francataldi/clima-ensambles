@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import torch
 
 from .models.forecaster import Forecaster, enable_mc_dropout
+from .noise import smooth_noise
 
 
 @dataclass(frozen=True)
@@ -14,19 +15,6 @@ class EnsembleConfig:
     length_scale: float = 6.0
     mc_dropout: bool = False
     batch: int = 25
-
-
-def smooth_noise(shape: tuple[int, ...], length_scale: float, generator: torch.Generator, device: torch.device) -> torch.Tensor:
-    M, C, H, W = shape
-    white = torch.randn(shape, generator=generator, device="cpu").to(device)
-    spec = torch.fft.rfft2(white, dim=(-2, -1))
-    ky = torch.fft.fftfreq(H, device=device)[:, None] * H
-    kx = torch.fft.rfftfreq(W, device=device)[None, :] * W
-    k2 = ky**2 + kx**2
-    filt = torch.exp(-k2 / (2 * (max(H, W) / length_scale) ** 2))
-    field = torch.fft.irfft2(spec * filt, s=(H, W), dim=(-2, -1))
-    field = field - field.mean(dim=(-2, -1), keepdim=True)
-    return field / field.std(dim=(-2, -1), keepdim=True).clamp_min(1e-6)
 
 
 def perturb(model: Forecaster, state: torch.Tensor, cfg: EnsembleConfig, generator: torch.Generator, keep_control: bool) -> torch.Tensor:
@@ -65,7 +53,8 @@ def run_ensemble(
             if cfg.mc_dropout:
                 enable_mc_dropout(model)
             idx = torch.tensor(sel, device=device)
-            result[idx] = model.rollout(x0[idx], f[idx])
+            control = start == 0 and sel[0] == 0
+            result[idx] = model.rollout(x0[idx], f[idx], generator=generator, sample=True, control_first=control)
             model.eval()
         outs.append(result)
     return torch.cat(outs, dim=0)

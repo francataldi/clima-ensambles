@@ -24,6 +24,8 @@ class Stage:
     rollout: int
     epochs: int
     lr: float
+    loss: str = "mse"
+    members: int = 2
 
 
 @dataclass
@@ -92,6 +94,7 @@ def validate(model: Forecaster, store: Era5Store, cfg: TrainConfig, device: torc
     heads = [store.index(h) for h in cfg.headline if h in store.names]
     w = model.lat_weights
     loss_sum = 0.0
+    crps_sum = 0.0
     se = torch.zeros(cfg.val_rollout, len(heads), device=device)
     n = 0
     for b, (states, forcings, _) in enumerate(loader):
@@ -103,6 +106,13 @@ def validate(model: Forecaster, store: Era5Store, cfg: TrainConfig, device: torc
             traj = model.rollout(states[:, 0], forcings)
         traj = traj.float()
         loss_sum += float(model.loss(traj[:, 1], states[:, 1])) * states.shape[0]
+        if model.stochastic:
+            members = 4
+            x0 = states[:, 0].repeat(members, 1, 1, 1)
+            f = forcings[:, :1].repeat(members, 1, 1, 1, 1)
+            sampled = model.rollout(x0, f, sample=True)[:, 1].float()
+            sampled = sampled.view(members, states.shape[0], *sampled.shape[1:])
+            crps_sum += float(model.crps_loss(sampled, states[:, 1])) * states.shape[0]
         pred = model.denormalize(traj[:, 1:].reshape(-1, *traj.shape[2:])).view(*traj[:, 1:].shape)
         true = model.denormalize(states[:, 1:].reshape(-1, *states.shape[2:])).view(*states[:, 1:].shape)
         err = ((pred - true) ** 2 * w.unsqueeze(1)).mean(dim=(-2, -1))
@@ -110,6 +120,8 @@ def validate(model: Forecaster, store: Era5Store, cfg: TrainConfig, device: torc
         n += states.shape[0]
     rmse = torch.sqrt(se / max(n, 1)).cpu().numpy()
     result = {"val_loss": loss_sum / max(n, 1)}
+    if model.stochastic:
+        result["val_crps"] = crps_sum / max(n, 1)
     for k in range(cfg.val_rollout):
         for j, h in enumerate([h for h in cfg.headline if h in store.names]):
             result[f"rmse_{h}_{6 * (k + 1)}h"] = float(rmse[k, j])
@@ -174,12 +186,21 @@ def train(cfg: TrainConfig) -> Path:
                         g["lr"] = lr
                     states = states.to(device, non_blocking=True)
                     forcings = forcings.to(device, non_blocking=True)
-                    x = states[:, 0]
                     loss = torch.zeros((), device=device)
                     with torch.autocast(device_type=device.type, dtype=torch.bfloat16, enabled=use_amp):
-                        for k in range(stage.rollout):
-                            x = model.step(x, forcings[:, k])
-                            loss = loss + model.loss(x.float(), states[:, k + 1])
+                        if stage.loss == "crps":
+                            B = states.shape[0]
+                            M = stage.members
+                            x = states[:, 0].repeat(M, 1, 1, 1)
+                            for k in range(stage.rollout):
+                                x = model.step(x, forcings[:, k].repeat(M, 1, 1, 1), model.sample_noise(M * B))
+                                members = x.float().view(M, B, *x.shape[1:])
+                                loss = loss + model.crps_loss(members, states[:, k + 1])
+                        else:
+                            x = states[:, 0]
+                            for k in range(stage.rollout):
+                                x = model.step(x, forcings[:, k])
+                                loss = loss + model.loss(x.float(), states[:, k + 1])
                     loss = loss / stage.rollout
                     opt.zero_grad(set_to_none=True)
                     loss.backward()
@@ -205,7 +226,7 @@ def train(cfg: TrainConfig) -> Path:
                 metrics_file.flush()
                 head = " ".join(f"{k}={v:.3f}" for k, v in val.items() if k.endswith("24h"))
                 print(f"etapa {si} (rollout {stage.rollout}) epoca {epoch + 1}/{stage.epochs} | train {train_loss:.4f} | val {val['val_loss']:.4f} | {head} | {row['seconds']}s", flush=True)
-                score = val["val_loss"]
+                score = val["val_crps"] if stage.loss == "crps" and "val_crps" in val else val["val_loss"]
                 save_forecaster(out / "last.pt", model, {"stage": si, "epoch": epoch + 1, **val})
                 if score < best:
                     best = score

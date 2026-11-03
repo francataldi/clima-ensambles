@@ -6,6 +6,7 @@ import torch.nn as nn
 
 from ..data.dataset import N_DYNAMIC
 from ..data.store import Era5Store
+from ..noise import fair_crps, smooth_noise
 from .afno import AFNOConfig, AFNONet
 
 
@@ -49,7 +50,7 @@ class Forecaster(nn.Module):
         w = np.cos(np.deg2rad(lat))
         self.register_buffer("lat_weights", torch.from_numpy((w / w.mean()).astype(np.float32)).view(1, 1, -1, 1))
         self.lat = np.asarray(lat)
-        self.net = AFNONet(n_channels + N_DYNAMIC + static.shape[0], n_channels, H, W, cfg)
+        self.net = AFNONet(n_channels + N_DYNAMIC + static.shape[0] + cfg.noise_channels, n_channels, H, W, cfg)
 
     @classmethod
     def from_store(cls, store: Era5Store, cfg: AFNOConfig) -> "Forecaster":
@@ -63,17 +64,41 @@ class Forecaster(nn.Module):
             cfg,
         )
 
-    def step(self, state: torch.Tensor, forcing: torch.Tensor) -> torch.Tensor:
+    @property
+    def stochastic(self) -> bool:
+        return self.cfg.noise_channels > 0
+
+    def sample_noise(self, batch: int, generator: torch.Generator | None = None) -> torch.Tensor:
+        H, W = self.static.shape[1:]
+        return smooth_noise((batch, self.cfg.noise_channels, H, W), self.cfg.noise_length_scale, generator, self.static.device)
+
+    def step(self, state: torch.Tensor, forcing: torch.Tensor, noise: torch.Tensor | None = None) -> torch.Tensor:
         B = state.shape[0]
         static = self.static.unsqueeze(0).expand(B, -1, -1, -1).to(state.dtype)
-        x = torch.cat([state, forcing.to(state.dtype), static], dim=1)
-        delta = self.net(x)
+        parts = [state, forcing.to(state.dtype), static]
+        if self.stochastic:
+            if noise is None:
+                noise = torch.zeros(B, self.cfg.noise_channels, *state.shape[-2:], device=state.device)
+            parts.append(noise.to(state.dtype))
+        delta = self.net(torch.cat(parts, dim=1))
         return state + delta.float() * self.tendency
 
-    def rollout(self, state: torch.Tensor, forcings: torch.Tensor) -> torch.Tensor:
+    def rollout(
+        self,
+        state: torch.Tensor,
+        forcings: torch.Tensor,
+        generator: torch.Generator | None = None,
+        sample: bool = False,
+        control_first: bool = False,
+    ) -> torch.Tensor:
         out = [state]
         for k in range(forcings.shape[1]):
-            state = self.step(state, forcings[:, k])
+            noise = None
+            if self.stochastic and sample:
+                noise = self.sample_noise(state.shape[0], generator)
+                if control_first:
+                    noise[0] = 0.0
+            state = self.step(state, forcings[:, k], noise)
             out.append(state)
         return torch.stack(out, dim=1)
 
@@ -90,6 +115,11 @@ class Forecaster(nn.Module):
         if channel_weights is not None:
             per_channel = per_channel * channel_weights
         return per_channel.mean()
+
+    def crps_loss(self, members: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        scale = self.tendency.unsqueeze(0)
+        crps = fair_crps(members / scale, target / self.tendency)
+        return (crps * self.lat_weights).mean()
 
 
 def enable_mc_dropout(model: nn.Module) -> None:
