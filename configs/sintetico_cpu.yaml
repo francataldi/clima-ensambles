@@ -1,0 +1,20 @@
+data_dir: data/sintetico
+train_range: ["2017-01-01", "2018-12-31T18"]
+val_range: ["2019-01-01", "2019-12-31T18"]
+model:
+  dim: 64
+  depth: 2
+  num_blocks: 4
+  patch: 2
+  dropout: 0.1
+stages:
+  - {rollout: 1, epochs: 2, lr: 0.001}
+  - {rollout: 2, epochs: 1, lr: 0.0003}
+batch_size: 8
+num_workers: 0
+steps_per_epoch: 40
+val_batches: 5
+warmup_steps: 10
+amp: false
+device: cpu
+out_dir: runs/sintetico

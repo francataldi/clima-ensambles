@@ -1,0 +1,21 @@
+data_dir: data/era5_64x32
+train_range: ["1990-01-01", "2017-12-31T18"]
+val_range: ["2018-01-01", "2019-12-31T18"]
+model:
+  dim: 256
+  depth: 8
+  num_blocks: 8
+  patch: 2
+  mlp_ratio: 4.0
+  dropout: 0.1
+  drop_path: 0.05
+stages:
+  - {rollout: 1, epochs: 40, lr: 0.0005}
+  - {rollout: 2, epochs: 6, lr: 0.0001}
+  - {rollout: 4, epochs: 4, lr: 0.00005}
+batch_size: 16
+num_workers: 4
+val_batches: 40
+amp: true
+device: auto
+out_dir: runs/afno
