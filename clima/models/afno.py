@@ -42,6 +42,10 @@ class AFNO2D(nn.Module):
         self.b2 = nn.Parameter(scale * torch.randn(2, num_blocks, self.block))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        with torch.autocast(device_type=x.device.type, enabled=False):
+            return self._spectral(x)
+
+    def _spectral(self, x: torch.Tensor) -> torch.Tensor:
         residual = x
         dtype = x.dtype
         x = x.float()
