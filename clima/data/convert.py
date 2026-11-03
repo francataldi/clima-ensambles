@@ -12,10 +12,20 @@ from ..channels import STATIC, Channel, default_channels
 WB2_ERA5_64x32 = "gs://weatherbench2/datasets/era5/1959-2022-6h-64x32_equiangular_conservative.zarr"
 
 
+RENAMES = {"lat": "latitude", "lon": "longitude", "pressure_level": "level", "valid_time": "time"}
+
+
+def standardize(ds: xr.Dataset) -> xr.Dataset:
+    renames = {k: v for k, v in RENAMES.items() if k in ds.dims or k in ds.coords}
+    return ds.rename(renames) if renames else ds
+
+
 def open_wb2(path: str = WB2_ERA5_64x32) -> xr.Dataset:
     if path.startswith("gs://"):
-        return xr.open_zarr(path, storage_options={"token": "anon"}, consolidated=True, chunks=None)
-    return xr.open_zarr(path, consolidated=None, chunks=None)
+        ds = xr.open_zarr(path, storage_options={"token": "anon"}, consolidated=True, chunks=None)
+    else:
+        ds = xr.open_zarr(path, consolidated=None, chunks=None)
+    return standardize(ds)
 
 
 def _grid(ds: xr.Dataset) -> tuple[np.ndarray, np.ndarray]:
@@ -40,7 +50,7 @@ def convert(
     channels = channels or default_channels()
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    ds = ds.sortby("latitude").sortby("longitude")
+    ds = standardize(ds).sortby("latitude").sortby("longitude")
     ds = ds.sel(time=slice(f"{start_year}-01-01", f"{end_year}-12-31T23:59"))
     times = ds["time"].values.astype("datetime64[s]")
     lat, lon = _grid(ds)
