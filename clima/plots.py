@@ -444,3 +444,72 @@ def plot_strategy_rank_histograms(comparison: dict, out_dir: str | Path, variabl
         fig.savefig(path, dpi=150)
         plt.close(fig)
     return path
+
+
+DIVERGING = ("#8f1f1e", "#e34948", "#f6c9c4", "#f0efec", "#cde2fb", "#3987e5", "#104281")
+
+
+def diverging_cmap():
+    from matplotlib.colors import LinearSegmentedColormap
+
+    return LinearSegmentedColormap.from_list("rojo_azul", DIVERGING)
+
+
+def _cell_text(key: str, value: float) -> str:
+    if not np.isfinite(value):
+        return "–"
+    if key == "cambio_rmse_pct":
+        text = f"{value:+.0f}" if abs(value) >= 9.5 else f"{value:+.1f}"
+    elif key == "cambio_acc":
+        text = f"{value:+.2f}"
+    else:
+        text = f"{value:.2f}"
+    if float(text) == 0:
+        return "0"
+    return text.replace("-", "−")
+
+
+def plot_scorecard(card: dict, out_dir: str | Path) -> Path:
+    from matplotlib.colors import Normalize
+
+    from .scorecard import PANELS
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    variables, leads = card["variables"], card["leads"]
+    panels = [p for p in PANELS if np.isfinite(card[p[0]]).any()]
+    cols = 2 if len(panels) > 1 else 1
+    rows = int(np.ceil(len(panels) / cols))
+    cmap = diverging_cmap()
+    with theme():
+        fig, axes = figure(rows, cols, (0.58 * len(leads) + 1.3, 0.27 * len(variables) + 1.0), header=0.85)
+        for ax in axes.ravel()[len(panels) :]:
+            ax.set_visible(False)
+        for ax, (key, title, description, invert) in zip(axes.ravel(), panels, strict=False):
+            values = np.asarray(card[key], dtype=np.float64)
+            shown = -values if invert else values
+            finite = np.abs(shown[np.isfinite(shown)])
+            vmax = float(np.clip(np.percentile(finite, 95) if finite.size else 1.0, 1e-3, 100.0 if key == "cambio_rmse_pct" else 1.0))
+            norm = Normalize(-vmax, vmax)
+            ax.pcolormesh(np.ma.masked_invalid(shown), cmap=cmap, norm=norm, edgecolors=SURFACE, linewidth=1.5)
+            for i in range(len(variables)):
+                for j in range(len(leads)):
+                    v = values[i, j]
+                    rgba = cmap(norm(shown[i, j])) if np.isfinite(v) else (1, 1, 1, 1)
+                    light = 0.2126 * rgba[0] + 0.7152 * rgba[1] + 0.0722 * rgba[2] > 0.55
+                    ax.text(j + 0.5, i + 0.5, _cell_text(key, v), ha="center", va="center", fontsize=7, color=INK if light else "#ffffff")
+            ax.set_xticks(np.arange(len(leads)) + 0.5, [_lead_label(h) for h in leads])
+            ax.set_yticks(np.arange(len(variables)) + 0.5, variables)
+            ax.invert_yaxis()
+            ax.tick_params(length=0)
+            ax.grid(False)
+            for side in ("left", "bottom"):
+                ax.spines[side].set_visible(False)
+            ax.set_title(title, pad=16)
+            ax.text(0.0, 1.012, description, transform=ax.transAxes, fontsize=7.5, color=INK_2, va="bottom")
+        subtitle = f"{card.get('inits')} inicializaciones · {card.get('members')} miembros · azul = mejor, rojo = peor"
+        header(fig, "Scorecard", subtitle)
+        path = out / "scorecard.png"
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+    return path

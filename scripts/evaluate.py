@@ -6,7 +6,8 @@ import torch
 from clima.data.store import Era5Store
 from clima.ensemble import EnsembleConfig
 from clima.evaluate import evaluate, save_report
-from clima.plots import plot_event_scores, plot_rank_histograms, plot_reliability, plot_roc, plot_skill
+from clima.plots import plot_event_scores, plot_rank_histograms, plot_reliability, plot_roc, plot_scorecard, plot_skill
+from clima.scorecard import save_scorecard, scorecard
 from clima.train import load_members
 
 
@@ -35,6 +36,9 @@ def main() -> None:
     out = save_report(result, args.out)
     plot_skill(result, out)
     plot_rank_histograms(result, out)
+    card = scorecard(result)
+    save_scorecard(card, out)
+    plot_scorecard(card, out)
     if "events" in result:
         plot_event_scores(result, out)
         plot_reliability(result, out)

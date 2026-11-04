@@ -143,7 +143,7 @@ def save_report(result: dict, out_dir: str | Path) -> Path:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     write_json(out / "metrics.json", result)
-    lines = ["variable,lead_h,det_rmse,mean_rmse,persist_rmse,clim_rmse,crps,spread,spread_skill,det_acc"]
+    lines = ["variable,lead_h,det_rmse,mean_rmse,persist_rmse,clim_rmse,crps,spread,spread_skill,det_acc,mean_acc"]
     for c, name in enumerate(result["channels"]):
         for i, lead in enumerate(result["lead_hours"]):
             if lead == 0:
@@ -162,6 +162,7 @@ def save_report(result: dict, out_dir: str | Path) -> Path:
                         result["spread"][i][c],
                         result["spread_skill"][i][c],
                         result["det_acc"][i][c],
+                        result["mean_acc"][i][c] if "mean_acc" in result else "",
                     )
                 )
             )
