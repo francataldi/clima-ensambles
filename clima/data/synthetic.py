@@ -23,7 +23,7 @@ def make_synthetic(start: str, end: str, seed: int = 0, n_lon: int = 64, n_lat: 
     t = np.arange(len(times))[:, None, None]
     la = np.deg2rad(lat)[None, None, :]
     lo = np.deg2rad(lon)[None, :, None]
-    doy = times.dayofyear.values[:, None, None]
+    doy = times.day_of_year.values[:, None, None]
     season = np.sin(2 * np.pi * doy / 365.25)
     hour = times.hour.values[:, None, None]
     diurnal = np.cos(2 * np.pi * hour / 24 + lo)
