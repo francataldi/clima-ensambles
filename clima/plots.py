@@ -344,3 +344,103 @@ def plot_roc(result: dict, out_dir: str | Path, leads: list[int] | None = None) 
         fig.savefig(path, dpi=150)
         plt.close(fig)
     return path
+
+
+STRATEGY_ORDER = ("ci", "ruido", "ci+ruido", "mc_dropout")
+MARKERS = ("o", "s", "^", "D", "v", "P", "X", "*")
+CHANNEL_UNITS = {"t": "K", "u": "m/s", "v": "m/s", "z": "m²/s²", "q": "kg/kg", "msl": "Pa", "ws": "m/s"}
+
+
+def channel_units(name: str) -> str:
+    if name in CHANNEL_UNITS:
+        return CHANNEL_UNITS[name]
+    for prefix in ("ws", "t", "u", "v", "z", "q"):
+        if name.startswith(prefix):
+            return CHANNEL_UNITS[prefix]
+    return ""
+
+
+def strategy_styles(names) -> dict[str, tuple[str, str]]:
+    order = list(STRATEGY_ORDER) + [n for n in names if n not in STRATEGY_ORDER]
+    return {n: (SERIES[order.index(n) % len(SERIES)], MARKERS[order.index(n) % len(MARKERS)]) for n in names}
+
+
+def plot_strategy_scores(comparison: dict, out_dir: str | Path, variables: tuple[str, ...] = ("z500", "t850", "t2m", "u10")) -> Path:
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    results = comparison["strategies"]
+    labels = comparison.get("labels", {})
+    first = next(iter(results.values()))
+    variables = [v for v in variables if v in first["channels"]] or first["channels"][:4]
+    days = np.asarray(first["lead_hours"]) / 24.0
+    styles = strategy_styles(list(results))
+    reference = _array(results["ci"]["crps"]) if "ci" in results and len(results) > 1 else None
+    rows = [("crps", "CRPS")] + ([("crpss", "CRPSS frente a solo CI")] if reference is not None else []) + [("spread_skill", "dispersión / RMSE de la media")]
+    with theme():
+        fig, axes = figure(len(rows), len(variables), (3.7, 2.8), header=1.0)
+        for j, var in enumerate(variables):
+            for name, r in results.items():
+                c = r["channels"].index(var)
+                color, marker = styles[name]
+                crps = _array(r["crps"])[:, c]
+                series = {"crps": crps, "spread_skill": _array(r["spread_skill"])[:, c]}
+                if reference is not None:
+                    series["crpss"] = 1.0 - crps / np.maximum(reference[:, c], 1e-12)
+                for i, (key, _) in enumerate(rows):
+                    axes[i, j].plot(days[1:], series[key][1:], color=color, marker=marker, ms=3.5, label=labels.get(name, name))
+            for i, (key, ylabel) in enumerate(rows):
+                ax = axes[i, j]
+                if key == "spread_skill":
+                    ax.axhline(1.0, color=AXIS, lw=1.0, zorder=1)
+                    ax.set_xlabel("plazo (días)")
+                if key == "crpss":
+                    ax.axhline(0.0, color=AXIS, lw=1.0, zorder=1)
+                if j == 0:
+                    ax.set_ylabel(ylabel)
+            axes[0, j].set_title(f"{var} ({channel_units(var)})")
+        handles, names = axes[0, 0].get_legend_handles_labels()
+        members = first["ensemble"]["members"]
+        header(fig, "Estrategias de ensamble", f"{first['inits']} inicializaciones · {members} miembros por estrategia · mismas fechas y semilla", handles, names)
+        path = out / "estrategias.png"
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+    return path
+
+
+def plot_strategy_rank_histograms(comparison: dict, out_dir: str | Path, variable: str = "z500", leads: list[int] | None = None) -> Path:
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    results = comparison["strategies"]
+    labels = comparison.get("labels", {})
+    first = next(iter(results.values()))
+    leads = leads or _leads_to_show(first["lead_hours"])
+    styles = strategy_styles(list(results))
+    with theme():
+        fig, axes = figure(len(results), len(leads), (2.9, 1.75), header=0.75)
+        for i, (name, r) in enumerate(results.items()):
+            c = r["channels"].index(variable)
+            ranks = _array(r["rank_histogram"])[:, c]
+            top = max(1.5, float(np.nanmax(ranks[[r["lead_hours"].index(h) for h in leads]] * ranks.shape[-1])) * 1.1)
+            for j, lead in enumerate(leads):
+                ax = axes[i, j]
+                h = ranks[r["lead_hours"].index(lead)]
+                density = h * len(h)
+                ax.bar(np.arange(len(h)), density, width=1.0, color=styles[name][0], edgecolor=SURFACE, linewidth=0.6)
+                ax.axhline(1.0, color=INK_2, lw=0.9)
+                ax.set_ylim(0, top)
+                ax.set_xlim(-0.5, len(h) - 0.5)
+                ax.set_xticks([0, len(h) - 1], ["1", str(len(h))])
+                ax.grid(axis="x", visible=False)
+                ratio = (h[0] + h[-1]) * len(h) / 2
+                ax.text(0.98, 0.92, f"extremos ×{ratio:.1f}", transform=ax.transAxes, ha="right", va="top", fontsize=7, color=INK_2)
+                if i == 0:
+                    ax.set_title(f"plazo {_lead_label(lead)}", fontsize=9)
+                if j == 0:
+                    ax.set_ylabel(labels.get(name, name), fontsize=8)
+                if i == len(results) - 1:
+                    ax.set_xlabel("rango de la verdad")
+        header(fig, f"Histogramas de rangos de {variable}", "barras normalizadas: 1 = histograma plano · extremos ×k: verdad fuera del ensamble k veces más de lo esperado")
+        path = out / f"rangos_{variable}.png"
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+    return path
