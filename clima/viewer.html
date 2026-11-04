@@ -583,7 +583,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   tex.width = TW;
   tex.height = TH;
   const texCtx = tex.getContext("2d");
-  let texData = texCtx.createImageData(TW, TH);
+  const texData = texCtx.createImageData(TW, TH);
   let texKey = "";
 
   function renderTexture() {
@@ -957,14 +957,12 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       ctx.stroke();
     }
     drawMarker(ctx);
-    const v = DATA[S.v];
     const field = getField(S.v, S.view, S.lead, S.member);
     const missing = !field.some((x) => !Number.isNaN(x));
     $("overlay").textContent = missing ? "Sin datos de " + META.truth_label + " para este plazo" : "";
     $("overlay").classList.toggle("show", missing);
     $("hint").textContent = S.proj === "mapa" ? "arrastrá para mover el mapa" : "arrastrá para girar el globo";
     mapWrap.classList.toggle("globe", S.proj === "globo");
-    void v;
   }
 
   function niceStep(raw) {
@@ -1347,7 +1345,6 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     const spec = VIEWS.find((x) => x.id === id);
     if (!spec || (spec.needs && !v[spec.needs])) id = "media";
     S.view = id;
-    S.iso = $("iso").checked;
     render();
   }
 
@@ -1580,7 +1577,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     $("theme").addEventListener("click", () => {
       const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
       const next = dark ? "light" : "dark";
-      try { localStorage.setItem("clima-visor-tema", next); } catch (err) { void err; }
+      try { localStorage.setItem("clima-visor-tema", next); } catch { document.documentElement.dataset.stored = "no"; }
       applyTheme(next);
     });
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!document.documentElement.dataset.theme) applyTheme(null); });
@@ -1619,7 +1616,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 
   async function main() {
     try {
-      const saved = (() => { try { return localStorage.getItem("clima-visor-tema"); } catch (err) { void err; return null; } })();
+      const saved = (() => { try { return localStorage.getItem("clima-visor-tema"); } catch { return null; } })();
       if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
       $("title").textContent = META.title;
       $("subtitle").textContent = META.subtitle || M + " miembros · " + L + " plazos";
