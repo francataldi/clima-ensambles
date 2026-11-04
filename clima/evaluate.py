@@ -12,7 +12,7 @@ from .data.dataset import dynamic_forcings
 from .data.store import Era5Store
 from .ensemble import EnsembleConfig, run_ensemble
 from .events import Event, EventScores, Region
-from .metrics import acc, crps_ensemble, ensemble_spread, rank_histogram, rmse
+from .metrics import acc, crps_ensemble, ensemble_spread, rank_counts, rmse
 from .models.forecaster import Forecaster
 
 
@@ -42,9 +42,9 @@ def evaluate(
         inits = inits[:max_inits]
     w = store.latitude_weights()
     C = len(store.names)
-    acc_keys = ("det_rmse", "mean_rmse", "persist_rmse", "clim_rmse", "crps", "spread", "det_acc", "persist_acc")
+    acc_keys = ("det_rmse", "mean_rmse", "persist_rmse", "clim_rmse", "crps", "spread", "det_acc", "mean_acc", "persist_acc")
     sums = {k: np.zeros((steps + 1, C)) for k in acc_keys}
-    ranks = np.zeros((len(store.names), ens.members + 1))
+    ranks = np.zeros((steps + 1, C, ens.members + 1))
     scores = EventScores(store, ens.members, steps, events, regions, verbose=verbose) if event_metrics else None
     for n, t in enumerate(inits):
         t = int(t)
@@ -65,9 +65,9 @@ def evaluate(
         sums["crps"] += crps_ensemble(phys, truth, w)
         sums["spread"] += ensemble_spread(phys, w)
         sums["det_acc"] += acc(det, truth, clim, w)
+        sums["mean_acc"] += acc(mean, truth, clim, w)
         sums["persist_acc"] += acc(persist, truth, clim, w)
-        for c in range(C):
-            ranks[c] += rank_histogram(phys[:, -1, c], truth[-1, c], ens.members + 1)
+        ranks += rank_counts(phys, truth)
         if scores is not None:
             scores.update(t, phys, truth)
         if verbose and (n % 10 == 0 or n == len(inits) - 1):
@@ -80,7 +80,8 @@ def evaluate(
         "lead_hours": [6 * i for i in range(steps + 1)],
         "channels": store.names,
         "ensemble": asdict(ens),
-        "rank_histogram_last_lead": {name: (ranks[c] / max(ranks[c].sum(), 1)).round(4).tolist() for c, name in enumerate(store.names)},
+        "rank_histogram_last_lead": {name: (ranks[-1, c] / max(ranks[-1, c].sum(), 1)).round(4).tolist() for c, name in enumerate(store.names)},
+        "rank_histogram": (ranks / np.maximum(ranks.sum(-1, keepdims=True), 1)).round(5).tolist(),
     }
     for key, value in sums.items():
         result[key] = (value / k).round(5).tolist()

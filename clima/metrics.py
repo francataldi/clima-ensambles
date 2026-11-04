@@ -49,6 +49,27 @@ def rank_histogram(members: np.ndarray, truth: np.ndarray, bins: int | None = No
     return np.bincount(ranks, minlength=M + 1)[: (bins or M + 1)]
 
 
+def rank_counts(members: np.ndarray, truth: np.ndarray) -> np.ndarray:
+    M = members.shape[0]
+    below = (members < truth[None]).sum(axis=0)
+    lead = below.shape[:-2]
+    groups = int(np.prod(lead, dtype=np.int64))
+    flat = below.reshape(groups, -1) + (np.arange(groups) * (M + 1))[:, None]
+    return np.bincount(flat.ravel(), minlength=groups * (M + 1)).reshape(*lead, M + 1)
+
+
+def rank_outlier_ratio(hist: np.ndarray) -> np.ndarray:
+    hist = np.asarray(hist, dtype=np.float64)
+    p = _ratio(hist, hist.sum(-1, keepdims=True))
+    return (p[..., 0] + p[..., -1]) * hist.shape[-1] / 2
+
+
+def rank_reliability_index(hist: np.ndarray) -> np.ndarray:
+    hist = np.asarray(hist, dtype=np.float64)
+    p = _ratio(hist, hist.sum(-1, keepdims=True))
+    return np.abs(p - 1.0 / hist.shape[-1]).sum(-1)
+
+
 def bilinear(field: np.ndarray, lat: np.ndarray, lon: np.ndarray, plat: float, plon: float) -> np.ndarray:
     plon = plon % 360.0
     i = np.clip(np.searchsorted(lat, plat) - 1, 0, len(lat) - 2)
