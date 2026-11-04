@@ -54,6 +54,7 @@ class TrainConfig:
     out_dir: str = "runs/afno"
     seed: int = 0
     resume: bool = True
+    until_stage: int | None = None
     headline: tuple[str, ...] = ("z500", "t850", "t2m", "u10")
 
     @classmethod
@@ -66,6 +67,13 @@ class TrainConfig:
             if key in data:
                 data[key] = tuple(data[key])
         return cls(model=model, **data)
+
+    def last_stage(self) -> int:
+        if self.until_stage is None:
+            return len(self.stages) - 1
+        if not 0 <= self.until_stage < len(self.stages):
+            raise ValueError(f"until_stage={self.until_stage} fuera de rango: hay {len(self.stages)} etapas (0 a {len(self.stages) - 1})")
+        return self.until_stage
 
 
 def _device(name: str) -> torch.device:
@@ -143,6 +151,7 @@ def train(cfg: TrainConfig) -> Path:
     if device.type == "cuda":
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
+    last_stage = cfg.last_stage()
     store = Era5Store(cfg.data_dir)
     out = Path(cfg.out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -161,12 +170,15 @@ def train(cfg: TrainConfig) -> Path:
         print(f"retomando: etapa {position['stage']} epoca {position['epoch']}")
     n_params = sum(p.numel() for p in model.parameters())
     print(f"modelo con {n_params / 1e6:.1f} M parametros en {device}")
+    if position["stage"] > last_stage:
+        print(f"nada para entrenar: el estado guardado ya paso la etapa {last_stage}")
+        return out / "last.pt"
     metrics_path = out / "metrics.csv"
     metrics_file = open(metrics_path, "a", newline="", encoding="utf-8")
     writer = None
     use_amp = cfg.amp and device.type == "cuda"
     try:
-        for si in range(position["stage"], len(cfg.stages)):
+        for si in range(position["stage"], last_stage + 1):
             stage = Stage(**cfg.stages[si])
             train_ds = ForecastDataset(store, *cfg.train_range, rollout=stage.rollout)
             loader = _loader(train_ds, cfg, True, device)
@@ -236,6 +248,8 @@ def train(cfg: TrainConfig) -> Path:
             position = {"stage": si + 1, "epoch": 0, "step": 0}
             best = float("inf")
             save_forecaster(out / f"stage{si}_rollout{stage.rollout}.pt", model, {"stage": si})
+        if last_stage < len(cfg.stages) - 1:
+            print(f"detenido despues de la etapa {last_stage}: al volver a correr sin --until-stage se retoma en la etapa {last_stage + 1}")
     finally:
         metrics_file.close()
     return out / "last.pt"
