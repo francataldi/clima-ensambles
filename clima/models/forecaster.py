@@ -53,7 +53,7 @@ class Forecaster(nn.Module):
         self.net = AFNONet(n_channels + N_DYNAMIC + static.shape[0] + cfg.noise_channels, n_channels, H, W, cfg)
 
     @classmethod
-    def from_store(cls, store: Era5Store, cfg: AFNOConfig) -> "Forecaster":
+    def from_store(cls, store: Era5Store, cfg: AFNOConfig) -> Forecaster:
         return cls(
             len(store.names),
             static_planes(store),

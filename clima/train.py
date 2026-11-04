@@ -57,7 +57,7 @@ class TrainConfig:
     headline: tuple[str, ...] = ("z500", "t850", "t2m", "u10")
 
     @classmethod
-    def from_yaml(cls, path: str | Path) -> "TrainConfig":
+    def from_yaml(cls, path: str | Path) -> TrainConfig:
         with open(path, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
         base = cls()

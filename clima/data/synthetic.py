@@ -29,7 +29,7 @@ def make_synthetic(start: str, end: str, seed: int = 0, n_lon: int = 64, n_lat: 
     diurnal = np.cos(2 * np.pi * hour / 24 + lo)
     waves = sum(
         np.sin(k * lo - 2 * np.pi * t / (16 + 8 * k) + p) * np.cos(la) ** k
-        for k, p in zip((2, 3, 5), rng.uniform(0, 2 * np.pi, 3))
+        for k, p in zip((2, 3, 5), rng.uniform(0, 2 * np.pi, 3), strict=True)
     )
     noise = rng.normal(0, 0.05, size=(len(times), n_lon, n_lat))
     base = waves + noise

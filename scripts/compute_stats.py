@@ -13,7 +13,7 @@ def main() -> None:
     parser.add_argument("--end", default="2017-12-31T18")
     args = parser.parse_args()
     stats = compute_stats(Era5Store(args.data), args.start, args.end)
-    for name, m, s, d in zip(stats["names"], stats["mean"], stats["std"], stats["diff_std"]):
+    for name, m, s, d in zip(stats["names"], stats["mean"], stats["std"], stats["diff_std"], strict=True):
         print(f"{name:>6}  media {m:12.4f}  desvio {s:10.4f}  desvio 6h {d:10.4f}")
 
 

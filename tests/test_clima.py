@@ -5,7 +5,7 @@ import pytest
 import torch
 
 from clima.data.convert import convert
-from clima.data.dataset import ForecastDataset, N_DYNAMIC, dynamic_forcings
+from clima.data.dataset import N_DYNAMIC, ForecastDataset, dynamic_forcings
 from clima.data.stats import compute_stats
 from clima.data.store import Era5Store
 from clima.data.synthetic import make_synthetic

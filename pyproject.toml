@@ -19,10 +19,24 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "ruff>=0.15"]
 
 [tool.setuptools.packages.find]
 include = ["clima*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 200
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.pyflakes]
+allowed-unused-imports = ["_path"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["clima.ensemble.EnsembleConfig", "clima.models.afno.AFNOConfig", "torch.device"]
