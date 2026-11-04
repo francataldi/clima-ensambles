@@ -110,52 +110,66 @@ def plot_skill(result: dict, out_dir: str | Path, variables: tuple[str, ...] = (
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     names = result["channels"]
-    leads = np.asarray(result["lead_hours"]) / 24.0
-    variables = tuple(v for v in variables if v in names)
-    fig, axes = plt.subplots(2, len(variables), figsize=(4.2 * len(variables), 7), squeeze=False)
-    for j, var in enumerate(variables):
-        c = names.index(var)
-        ax = axes[0, j]
-        for key, label, style in (
-            ("det_rmse", "modelo", "-"),
-            ("mean_rmse", "media del ensamble", "-"),
-            ("persist_rmse", "persistencia", "--"),
-            ("clim_rmse", "climatología", ":"),
-        ):
-            ax.plot(leads[1:], np.asarray(result[key])[1:, c], style, label=label)
-        ax.set_title(f"{var}: RMSE")
-        ax.set_xlabel("días")
-        ax.set_ylabel(UNITS.get(var, ("", 1))[0])
-        ax.grid(alpha=0.3)
-        ax2 = axes[1, j]
-        ax2.plot(leads[1:], np.asarray(result["crps"])[1:, c], label="CRPS")
-        ax2.plot(leads[1:], np.asarray(result["spread"])[1:, c], "--", label="dispersión")
-        ax2.plot(leads[1:], np.asarray(result["mean_rmse"])[1:, c], ":", label="RMSE media")
-        ax2.set_title(f"{var}: ensamble")
-        ax2.set_xlabel("días")
-        ax2.grid(alpha=0.3)
-    axes[0, 0].legend(fontsize=8)
-    axes[1, 0].legend(fontsize=8)
-    fig.tight_layout()
-    path = out / "skill.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    days = np.asarray(result["lead_hours"]) / 24.0
+    variables = tuple(v for v in variables if v in names) or tuple(names[:4])
+    with theme():
+        fig, axes = figure(2, len(variables), (3.7, 2.9), header=1.0)
+        for j, var in enumerate(variables):
+            c = names.index(var)
+            ax = axes[0, j]
+            for key, label, color, style in (
+                ("persist_rmse", "persistencia", MUTED, "--"),
+                ("clim_rmse", "climatología", AXIS, ":"),
+                ("det_rmse", "control", SERIES[0], "-"),
+                ("mean_rmse", "media del ensamble", SERIES[1], "-"),
+            ):
+                ax.plot(days[1:], _array(result[key])[1:, c], style, color=color, lw=1.8 if style == "-" else 1.4, label=label)
+            ax.set_title(f"{var} ({channel_units(var)})")
+            if j == 0:
+                ax.set_ylabel("RMSE")
+            ax2 = axes[1, j]
+            ax2.plot(days[1:], _array(result["mean_rmse"])[1:, c], color=SERIES[1], label="RMSE de la media")
+            ax2.plot(days[1:], _array(result["spread"])[1:, c], color=SERIES[2], label="dispersión")
+            ax2.plot(days[1:], _array(result["crps"])[1:, c], color=SERIES[6], label="CRPS")
+            ax2.set_xlabel("plazo (días)")
+            if j == 0:
+                ax2.set_ylabel("ensamble")
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        more, more_labels = axes[1, 0].get_legend_handles_labels()
+        subtitle = f"{result['inits']} inicializaciones · {result['ensemble']['members']} miembros · arriba: error del control y de la media · abajo: dispersión vs error"
+        header(fig, "Skill por plazo", subtitle, handles + more[1:], labels + more_labels[1:])
+        path = out / "skill.png"
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
     return path
 
 
 def plot_rank_histograms(result: dict, out_dir: str | Path, variables: tuple[str, ...] = ("z500", "t850", "t2m", "u10")) -> Path:
     out = Path(out_dir)
-    variables = tuple(v for v in variables if v in result["rank_histogram_last_lead"])
-    fig, axes = plt.subplots(1, len(variables), figsize=(4 * len(variables), 3), squeeze=False)
-    for j, var in enumerate(variables):
-        h = np.asarray(result["rank_histogram_last_lead"][var])
-        axes[0, j].bar(np.arange(len(h)), h, width=1.0)
-        axes[0, j].axhline(1.0 / len(h), color="k", ls="--", lw=1)
-        axes[0, j].set_title(f"{var}: histograma de rangos a {result['lead_hours'][-1] // 24} días")
-    fig.tight_layout()
-    path = out / "rank_histograms.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    out.mkdir(parents=True, exist_ok=True)
+    variables = tuple(v for v in variables if v in result["rank_histogram_last_lead"]) or tuple(result["rank_histogram_last_lead"])[:4]
+    lead = result["lead_hours"][-1]
+    with theme():
+        fig, axes = figure(1, len(variables), (3.4, 2.5), header=0.8)
+        top = max(1.5, max(float(np.max(_array(result["rank_histogram_last_lead"][v]))) * len(result["rank_histogram_last_lead"][v]) for v in variables) * 1.1)
+        for j, var in enumerate(variables):
+            ax = axes[0, j]
+            h = _array(result["rank_histogram_last_lead"][var])
+            ax.bar(np.arange(len(h)), h * len(h), width=1.0, color=SERIES[0], edgecolor=SURFACE, linewidth=0.6)
+            ax.axhline(1.0, color=INK_2, lw=0.9)
+            ax.set_ylim(0, top)
+            ax.set_xlim(-0.5, len(h) - 0.5)
+            ax.set_xticks([0, len(h) - 1], ["1", str(len(h))])
+            ax.grid(axis="x", visible=False)
+            ax.set_title(var)
+            ax.set_xlabel("rango de la verdad")
+            ax.text(0.98, 0.92, f"extremos ×{(h[0] + h[-1]) * len(h) / 2:.1f}", transform=ax.transAxes, ha="right", va="top", fontsize=7.5, color=INK_2)
+            if j == 0:
+                ax.set_ylabel("frecuencia / uniforme")
+        header(fig, f"Histogramas de rangos a {_lead_label(lead)}", "1 = plano (ensamble confiable) · forma de U: poca dispersión · forma de domo: demasiada")
+        path = out / "rank_histograms.png"
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
     return path
 
 
