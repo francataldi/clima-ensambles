@@ -27,6 +27,12 @@ def perturb(model: Forecaster, state: torch.Tensor, cfg: EnsembleConfig, generat
     return state + noise
 
 
+def _rng_devices(device: torch.device) -> list[int]:
+    if device.type != "cuda":
+        return []
+    return [device.index if device.index is not None else torch.cuda.current_device()]
+
+
 @torch.no_grad()
 def run_ensemble(
     models: list[Forecaster],
@@ -39,22 +45,29 @@ def run_ensemble(
     device = state.device
     steps = forcings.shape[0]
     outs = []
-    for start in range(0, cfg.members, cfg.batch):
-        n = min(cfg.batch, cfg.members - start)
-        members = []
-        for j in range(n):
-            members.append(models[(start + j) % len(models)])
-        x0 = state.unsqueeze(0).expand(n, -1, -1, -1).clone()
-        x0 = perturb(models[0], x0, cfg, generator, keep_control=start == 0)
-        f = forcings.unsqueeze(0).expand(n, -1, -1, -1, -1)
-        result = torch.empty((n, steps + 1, *state.shape), device=device)
-        for model in set(members):
-            sel = [j for j, m in enumerate(members) if m is model]
-            if cfg.mc_dropout:
-                enable_mc_dropout(model)
-            idx = torch.tensor(sel, device=device)
-            control = start == 0 and sel[0] == 0
-            result[idx] = model.rollout(x0[idx], f[idx], generator=generator, sample=True, control_first=control)
-            model.eval()
-        outs.append(result)
+    with torch.random.fork_rng(devices=_rng_devices(device), enabled=cfg.mc_dropout):
+        if cfg.mc_dropout:
+            torch.manual_seed(seed)
+        for start in range(0, cfg.members, cfg.batch):
+            n = min(cfg.batch, cfg.members - start)
+            members = [models[(start + j) % len(models)] for j in range(n)]
+            x0 = state.unsqueeze(0).expand(n, -1, -1, -1).clone()
+            x0 = perturb(models[0], x0, cfg, generator, keep_control=start == 0)
+            f = forcings.unsqueeze(0).expand(n, -1, -1, -1, -1)
+            result = torch.empty((n, steps + 1, *state.shape), device=device)
+            for model in dict.fromkeys(members):
+                sel = [j for j, m in enumerate(members) if m is model]
+                control = start == 0 and sel[0] == 0
+                if cfg.mc_dropout and control:
+                    result[0] = model.eval().rollout(x0[:1], f[:1])[0]
+                    sel = sel[1:]
+                    control = False
+                if not sel:
+                    continue
+                if cfg.mc_dropout:
+                    enable_mc_dropout(model)
+                idx = torch.tensor(sel, device=device)
+                result[idx] = model.rollout(x0[idx], f[idx], generator=generator, sample=True, control_first=control)
+                model.eval()
+            outs.append(result)
     return torch.cat(outs, dim=0)
