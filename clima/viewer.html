@@ -1,0 +1,1645 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>__TITLE__</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f3f3f0;
+  --card: #fcfcfb;
+  --raised: #ffffff;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e7e6e0;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.09);
+  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 4px 16px rgba(11, 11, 11, 0.05);
+  --accent: #2a78d6;
+  --accent-soft: rgba(42, 120, 214, 0.12);
+  --accent-2: #eb6834;
+  --member: #6250d6;
+  --truth: #0b0b0b;
+  --map-bg: #e9ebee;
+  --space: radial-gradient(ellipse at 50% 45%, #f7f8fa 0%, #e6e9ee 70%, #dfe3e9 100%);
+  --focus: #2a78d6;
+  --radius: 14px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --card: #1a1a19;
+    --raised: #232322;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #8f8d86;
+    --grid: #2c2c2a;
+    --axis: #45443f;
+    --border: rgba(255, 255, 255, 0.09);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+    --accent: #3987e5;
+    --accent-soft: rgba(57, 135, 229, 0.16);
+    --accent-2: #e8743f;
+    --member: #9085e9;
+    --truth: #f0efec;
+    --map-bg: #121212;
+    --space: radial-gradient(ellipse at 50% 45%, #1c2230 0%, #10131a 65%, #0b0c10 100%);
+    --focus: #5598e7;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --card: #1a1a19;
+  --raised: #232322;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --muted: #8f8d86;
+  --grid: #2c2c2a;
+  --axis: #45443f;
+  --border: rgba(255, 255, 255, 0.09);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --accent: #3987e5;
+  --accent-soft: rgba(57, 135, 229, 0.16);
+  --accent-2: #e8743f;
+  --member: #9085e9;
+  --truth: #f0efec;
+  --map-bg: #121212;
+  --space: radial-gradient(ellipse at 50% 45%, #1c2230 0%, #10131a 65%, #0b0c10 100%);
+  --focus: #5598e7;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font: 14px/1.45 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+button, select, input { font: inherit; color: inherit; }
+.app { max-width: 1480px; margin: 0 auto; padding: 20px 24px 28px; display: grid; gap: 14px; }
+.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.brand h1 { margin: 0; font-size: 22px; line-height: 1.2; letter-spacing: -0.01em; font-weight: 650; }
+.brand p { margin: 4px 0 0; color: var(--ink-2); font-size: 13.5px; }
+.top-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px;
+  background: var(--card); border: 1px solid var(--border); color: var(--ink-2); font-size: 13px; white-space: nowrap;
+}
+.chip strong { color: var(--ink); font-weight: 600; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border); background: var(--card);
+  display: inline-grid; place-items: center; cursor: pointer; color: var(--ink-2);
+}
+.icon-btn:hover { color: var(--ink); background: var(--raised); }
+.icon-btn svg { width: 18px; height: 18px; }
+.sun { display: none; }
+:root[data-theme="dark"] .sun { display: block; }
+:root[data-theme="dark"] .moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .sun { display: block; }
+  :root:not([data-theme="light"]) .moon { display: none; }
+}
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 22px; padding: 12px 16px; }
+.field { display: grid; gap: 5px; }
+.field > span { font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+select {
+  appearance: none; -webkit-appearance: none; height: 34px; padding: 0 34px 0 12px; border-radius: 9px;
+  border: 1px solid var(--border); background-color: var(--raised); color: var(--ink); cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 15px, calc(100% - 12px) 15px; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+}
+select:hover { border-color: var(--axis); }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--page); border: 1px solid var(--border); }
+.seg button {
+  height: 28px; padding: 0 11px; border: 0; border-radius: 7px; background: transparent; color: var(--ink-2);
+  cursor: pointer; font-size: 13px; white-space: nowrap;
+}
+.seg button:hover:not(:disabled) { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--raised); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border); }
+.seg button:disabled { opacity: 0.38; cursor: not-allowed; }
+.member { display: inline-flex; align-items: center; gap: 6px; height: 34px; }
+.member input { width: 140px; }
+.member output { min-width: 92px; color: var(--ink-2); font-variant-numeric: tabular-nums; font-size: 13px; }
+.mini {
+  width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--border); background: var(--raised);
+  cursor: pointer; color: var(--ink-2); line-height: 1; padding: 0;
+}
+.mini:hover { color: var(--ink); }
+.switch { display: inline-flex; align-items: center; gap: 9px; height: 34px; cursor: pointer; color: var(--ink-2); font-size: 13.5px; user-select: none; }
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch .track { width: 34px; height: 20px; border-radius: 999px; background: var(--axis); position: relative; transition: background 0.15s; }
+.switch .track::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: transform 0.15s;
+}
+.switch input:checked + .track { background: var(--accent); }
+.switch input:checked + .track::after { transform: translateX(14px); }
+.switch input:focus-visible + .track { outline: 2px solid var(--focus); outline-offset: 2px; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; align-items: start; }
+.map-card { padding: 14px 16px 10px; display: flex; flex-direction: column; gap: 10px; }
+.map-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.map-title { font-weight: 650; font-size: 15.5px; }
+.map-tools { display: flex; align-items: center; gap: 10px; }
+.icon-btn.small { width: 30px; height: 30px; border-radius: 8px; }
+.icon-btn.small svg { width: 15px; height: 15px; }
+.map-title span { color: var(--ink-2); font-weight: 400; }
+.valid { color: var(--ink-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+.valid b { color: var(--ink); font-weight: 600; }
+.map-wrap { position: relative; width: 100%; aspect-ratio: 2 / 1; border-radius: 10px; overflow: hidden; background: var(--map-bg); touch-action: none; }
+.map-wrap.globe { background: var(--space); }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; display: block; }
+#map.dragging { cursor: grabbing; }
+.overlay {
+  position: absolute; inset: 0; display: none; place-items: center; text-align: center; pointer-events: none;
+  color: var(--ink-2); background: color-mix(in srgb, var(--card) 70%, transparent); font-size: 14px;
+}
+.overlay.show { display: grid; }
+.hint { position: absolute; left: 10px; bottom: 10px; font-size: 11.5px; color: #fff; background: rgba(11, 11, 11, 0.42); padding: 3px 9px; border-radius: 999px; pointer-events: none; backdrop-filter: blur(4px); }
+.tip {
+  position: absolute; z-index: 5; pointer-events: none; padding: 7px 10px; border-radius: 9px; font-size: 12.5px; line-height: 1.4;
+  background: var(--raised); color: var(--ink); border: 1px solid var(--border); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.tip .k { color: var(--ink-2); }
+.tip b { font-weight: 650; }
+.legend-row { display: flex; align-items: flex-start; gap: 10px; }
+#cbar { flex: 1 1 auto; min-width: 0; max-width: 620px; height: 34px; display: block; }
+.units { color: var(--ink-2); font-size: 12.5px; white-space: nowrap; padding-top: 1px; min-width: 44px; }
+.side { display: grid; gap: 14px; }
+.panel { padding: 13px 15px 14px; display: flex; flex-direction: column; gap: 9px; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.panel-head h2 { margin: 0; font-size: 14.5px; font-weight: 650; white-space: nowrap; }
+.panel-head select { height: 30px; font-size: 13px; max-width: 168px; min-width: 0; }
+.point { color: var(--ink-2); font-size: 12.5px; font-variant-numeric: tabular-nums; margin-top: -4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--ink-2); }
+.legend i { display: inline-block; width: 16px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 6px; }
+.legend i.band { height: 10px; border: 0; border-radius: 2px; }
+.legend i.thin { border-top-width: 1px; opacity: 0.6; }
+.legend i.dash { border-top-style: dashed; }
+.chart { position: relative; width: 100%; height: 205px; }
+.chart.small { height: 132px; }
+.chart canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.readout { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); border-top: 1px solid var(--border); }
+.readout dt, .readout dd { margin: 0; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.readout dt { color: var(--ink-2); padding-right: 12px; white-space: nowrap; }
+.readout dd { text-align: right; font-variant-numeric: tabular-nums; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.readout dd small { color: var(--ink-2); font-weight: 500; font-size: 12px; }
+.readout dt:nth-last-of-type(1), .readout dd:nth-last-of-type(1) { border-bottom: 0; padding-bottom: 0; }
+.timeline { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 10px 2px 2px; border-top: 1px solid var(--border); }
+.play {
+  width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; cursor: pointer;
+  display: grid; place-items: center; box-shadow: 0 2px 8px rgba(42, 120, 214, 0.35);
+}
+.play:hover { filter: brightness(1.06); }
+.play svg { width: 18px; height: 18px; }
+.play .pause { display: none; }
+.play.on .pause { display: block; }
+.play.on .start { display: none; }
+.tl-body { display: grid; gap: 4px; min-width: 0; }
+.ticks { position: relative; height: 16px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.tl-info { display: flex; align-items: center; gap: 10px; }
+.lead-badge { font-variant-numeric: tabular-nums; font-weight: 650; font-size: 15px; min-width: 64px; text-align: right; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; cursor: pointer; margin: 0; }
+input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: linear-gradient(to right, var(--accent) var(--fill, 0%), var(--grid) var(--fill, 0%)); }
+input[type="range"]::-moz-range-track { height: 6px; border-radius: 999px; background: var(--grid); }
+input[type="range"]::-moz-range-progress { height: 6px; border-radius: 999px; background: var(--accent); }
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; background: #fff;
+  border: 2px solid var(--accent); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.credits { margin: 0; color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: space-between; }
+.kbd { display: inline-block; padding: 0 5px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; font-size: 11px; background: var(--card); }
+.loading { position: fixed; inset: 0; display: grid; place-items: center; background: var(--page); color: var(--ink-2); z-index: 20; font-size: 15px; }
+.loading.hidden { display: none; }
+.spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--grid); border-top-color: var(--accent); animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1120px) {
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .side { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+}
+@media (max-width: 640px) {
+  .app { padding: 14px 16px 22px; gap: 12px; }
+  .top { flex-direction: column; }
+  .brand h1 { font-size: 19px; }
+  .toolbar { gap: 12px 14px; padding: 12px; }
+  .member input { width: 96px; }
+  .timeline { grid-template-columns: auto minmax(0, 1fr); }
+  .tl-info { grid-column: 1 / -1; justify-content: space-between; }
+  .seg button { padding: 0 8px; }
+  #view { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .toolbar > .field:first-child, .toolbar > .field:first-child select { width: 100%; }
+  .field { min-width: 0; max-width: 100%; }
+  .side { grid-template-columns: minmax(0, 1fr); }
+  .hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2s; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1 id="title"></h1>
+      <p id="subtitle"></p>
+    </div>
+    <div class="top-actions">
+      <div class="chip"><span class="dot"></span><span>Inicio <strong id="init"></strong></span></div>
+      <button class="icon-btn" id="theme" type="button" aria-label="Cambiar entre tema claro y oscuro" title="Tema claro u oscuro">
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="card toolbar" aria-label="Controles del mapa">
+    <label class="field"><span>Variable</span><select id="var"></select></label>
+    <div class="field"><span>Vista</span><div class="seg" id="view" role="group" aria-label="Vista"></div></div>
+    <div class="field" id="member-field"><span>Miembro</span>
+      <div class="member">
+        <button class="mini" id="mprev" type="button" aria-label="Miembro anterior">‹</button>
+        <input type="range" id="member" min="0" max="0" step="1" value="0" aria-label="Miembro del ensamble">
+        <button class="mini" id="mnext" type="button" aria-label="Miembro siguiente">›</button>
+        <output id="mlabel"></output>
+      </div>
+    </div>
+    <div class="field"><span>Proyección</span><div class="seg" id="proj" role="group" aria-label="Proyección"></div></div>
+    <div class="field"><span>Capas</span><label class="switch"><input type="checkbox" id="iso"><span class="track"></span>Isolíneas</label></div>
+  </section>
+
+  <main class="main">
+    <section class="card map-card" aria-label="Mapa">
+      <div class="map-head">
+        <div class="map-title" id="map-title"></div>
+        <div class="map-tools">
+          <div class="valid" id="valid"></div>
+          <button class="icon-btn small" id="png" type="button" aria-label="Descargar el cuadro como PNG" title="Descargar PNG">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="map-wrap" id="map-wrap">
+        <canvas id="map" role="img" aria-label="Mapa del campo pronosticado"></canvas>
+        <div class="overlay" id="overlay"></div>
+        <div class="hint" id="hint"></div>
+        <div class="tip" id="tip" hidden></div>
+      </div>
+      <div class="legend-row"><span class="units" id="units"></span><canvas id="cbar" aria-hidden="true"></canvas></div>
+      <div class="timeline" aria-label="Plazo de pronóstico">
+        <button class="play" id="play" type="button" aria-label="Reproducir animación">
+          <svg class="start" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>
+          <svg class="pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>
+        </button>
+        <div class="tl-body">
+          <input type="range" id="lead" min="0" max="0" step="1" value="0" aria-label="Plazo">
+          <div class="ticks" id="ticks"></div>
+        </div>
+        <div class="tl-info">
+          <div class="lead-badge" id="lead-badge"></div>
+          <select id="speed" aria-label="Velocidad">
+            <option value="0.5">0,5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="card panel" aria-label="Pluma del ensamble en un punto">
+        <div class="panel-head"><h2>Pluma en el punto</h2><select id="place" aria-label="Lugar"></select></div>
+        <div class="point" id="point"></div>
+        <div class="legend" id="plume-legend"></div>
+        <div class="chart" id="plume-box"><canvas id="plume"></canvas><div class="tip" id="ptip" hidden></div></div>
+        <dl class="readout" id="readout"></dl>
+      </section>
+      <section class="card panel" aria-label="Error global contra dispersión">
+        <div class="panel-head"><h2 id="skill-title">Error global vs dispersión</h2></div>
+        <div class="legend" id="skill-legend"></div>
+        <div class="chart small" id="skill-box"><canvas id="skill"></canvas><div class="tip" id="stip" hidden></div></div>
+      </section>
+    </aside>
+  </main>
+
+  <p class="credits"><span id="credits-data"></span><span><span class="kbd">espacio</span> reproducir · <span class="kbd">←</span> <span class="kbd">→</span> plazo · clic en el mapa: pluma · arrastrar: mover</span></p>
+</div>
+<div class="loading" id="loading"><div><div class="spinner"></div><div id="loading-text">Cargando pronóstico…</div></div></div>
+<script id="meta" type="application/json">__META__</script>
+<script id="payload" type="application/octet-stream">__PAYLOAD__</script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const META = JSON.parse($("meta").textContent);
+  const L = META.lead_hours.length;
+  const M = META.members;
+  const LAT = Float64Array.from(META.lat);
+  const LON = Float64Array.from(META.lon);
+  const H = LAT.length;
+  const W = LON.length;
+  const N = H * W;
+  const DLAT = H > 1 ? (LAT[H - 1] - LAT[0]) / (H - 1) : 1;
+  const DLON = 360 / W;
+  const TW = 720;
+  const TH = 360;
+  const RAD = Math.PI / 180;
+  const AREA = new Float64Array(H);
+  let areaSum = 0;
+  for (let i = 0; i < H; i++) { AREA[i] = Math.cos(LAT[i] * RAD); areaSum += AREA[i] * W; }
+
+  const VIEWS = [
+    { id: "miembro", label: "Miembro" },
+    { id: "media", label: "Media" },
+    { id: "dispersion", label: "Dispersión" },
+    { id: "verdad", label: META.truth_label, needs: "has_truth" },
+    { id: "error", label: "Error", needs: "has_truth" },
+    { id: "prob", label: "P > p90", needs: "has_threshold" },
+  ];
+  const VIEW_TITLES = {
+    miembro: "miembro",
+    media: "media del ensamble",
+    dispersion: "dispersión del ensamble (desvío)",
+    verdad: META.truth_label,
+    error: "error de la media (media − " + META.truth_label + ")",
+    prob: "probabilidad de superar el p90 climatológico",
+  };
+  const PLACES = [
+    ["Buenos Aires", -34.6, -58.4], ["Córdoba", -31.4, -64.2], ["Mendoza", -32.9, -68.8], ["Ushuaia", -54.8, -68.3],
+    ["Montevideo", -34.9, -56.2], ["Santiago", -33.45, -70.67], ["São Paulo", -23.55, -46.63], ["Lima", -12.05, -77.04],
+    ["Bogotá", 4.71, -74.07], ["Ciudad de México", 19.43, -99.13], ["Nueva York", 40.71, -74.0], ["Madrid", 40.42, -3.7],
+    ["Londres", 51.5, -0.13], ["Ciudad del Cabo", -33.92, 18.42], ["Tokio", 35.68, 139.69], ["Sídney", -33.87, 151.21],
+  ];
+
+  const S = {
+    v: 0, view: "media", member: 0, lead: 0, proj: "mapa", iso: false, playing: false, speed: 1,
+    center: -30, rot: { lam: -60, phi: -18 }, point: { name: PLACES[0][0], lat: PLACES[0][1], lon: PLACES[0][2] },
+    hoverLead: null,
+  };
+  let DATA = [];
+  const LUTS = {};
+  const cache = new Map();
+  const fmtCache = new Map();
+
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const wrapLon = (lon) => ((((lon + 180) % 360) + 360) % 360) - 180;
+
+  function nf(digits) {
+    if (!fmtCache.has(digits)) {
+      fmtCache.set(digits, new Intl.NumberFormat("es-AR", { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false }));
+    }
+    return fmtCache.get(digits);
+  }
+  function fmt(x, digits) {
+    if (!Number.isFinite(x)) return "–";
+    const s = nf(digits).format(x);
+    return s === "-0" || /^-0[,.]0*$/.test(s) ? s.slice(1) : s.replace("-", "−");
+  }
+  function fmtCoord(lat, lon) {
+    const la = fmt(Math.abs(lat), 1) + "° " + (lat < 0 ? "S" : "N");
+    const lo = fmt(Math.abs(wrapLon(lon)), 1) + "° " + (wrapLon(lon) < 0 ? "O" : "E");
+    return la + " · " + lo;
+  }
+  const dateFmt = new Intl.DateTimeFormat("es-AR", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", hourCycle: "h23" });
+  const shortFmt = new Intl.DateTimeFormat("es-AR", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", hour: "2-digit", hourCycle: "h23" });
+  const initDate = new Date(META.init + ":00Z");
+  const validDate = (l) => new Date(initDate.getTime() + META.lead_hours[l] * 3600000);
+  const fmtDate = (d, f) => f.format(d).replace(/,/g, "").replace(/\s+/g, " ") + " UTC";
+  function leadText(l) {
+    const h = META.lead_hours[l];
+    if (h === 0) return "análisis";
+    if (h % 24 === 0) return "+" + h / 24 + " d";
+    return "+" + h + " h";
+  }
+
+  function decodeLut(b64) {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  async function load() {
+    const text = $("payload").textContent.trim();
+    const bin = atob(text);
+    let bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    if (META.gzip) {
+      if (typeof DecompressionStream === "undefined") throw new Error("Este navegador no soporta DecompressionStream. Usá una versión reciente de Chrome, Edge, Firefox o Safari.");
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    const buf = bytes.buffer;
+    for (const [name, b64] of Object.entries(META.luts)) LUTS[name] = decodeLut(b64);
+    DATA = META.variables.map((v) => ({
+      ...v,
+      mean: new Uint16Array(buf, v.offsets.mean, L * N),
+      truth: v.has_truth ? new Uint16Array(buf, v.offsets.truth, L * N) : null,
+      thr: v.has_threshold ? new Uint16Array(buf, v.offsets.threshold, L * N) : null,
+      dev: new Int8Array(buf, v.offsets.dev, L * M * N),
+    }));
+  }
+
+  function decodeU16(v, arr, l) {
+    const out = new Float32Array(N);
+    const base = l * N;
+    for (let k = 0; k < N; k++) {
+      const q = arr[base + k];
+      out[k] = q === 65535 ? NaN : v.lo + q * v.step;
+    }
+    return out;
+  }
+
+  function computeField(vi, view, l, m) {
+    const v = DATA[vi];
+    if (view === "media") return decodeU16(v, v.mean, l);
+    if (view === "verdad") return decodeU16(v, v.truth, l);
+    if (view === "error") {
+      const a = getField(vi, "media", l, 0);
+      const b = getField(vi, "verdad", l, 0);
+      const out = new Float32Array(N);
+      for (let k = 0; k < N; k++) out[k] = a[k] - b[k];
+      return out;
+    }
+    const mean = getField(vi, "media", l, 0);
+    const s = v.dev_scale[l];
+    const base = l * M * N;
+    if (view === "miembro") {
+      const out = new Float32Array(N);
+      const o = base + m * N;
+      for (let k = 0; k < N; k++) out[k] = mean[k] + v.dev[o + k] * s;
+      return out;
+    }
+    if (view === "dispersion") {
+      const sum = new Float64Array(N);
+      const sq = new Float64Array(N);
+      for (let j = 0; j < M; j++) {
+        const o = base + j * N;
+        for (let k = 0; k < N; k++) { const d = v.dev[o + k]; sum[k] += d; sq[k] += d * d; }
+      }
+      const out = new Float32Array(N);
+      for (let k = 0; k < N; k++) out[k] = M > 1 ? s * Math.sqrt(Math.max(0, (sq[k] - (sum[k] * sum[k]) / M) / (M - 1))) : 0;
+      return out;
+    }
+    if (view === "prob") {
+      const thr = getField(vi, "umbral", l, 0);
+      const count = new Uint16Array(N);
+      for (let j = 0; j < M; j++) {
+        const o = base + j * N;
+        for (let k = 0; k < N; k++) if (mean[k] + v.dev[o + k] * s > thr[k]) count[k]++;
+      }
+      const out = new Float32Array(N);
+      for (let k = 0; k < N; k++) out[k] = count[k] / M;
+      return out;
+    }
+    if (view === "umbral") return decodeU16(v, v.thr, l);
+    return new Float32Array(N).fill(NaN);
+  }
+
+  function getField(vi, view, l, m) {
+    const key = vi + "|" + view + "|" + l + "|" + (view === "miembro" ? m : 0);
+    let f = cache.get(key);
+    if (!f) {
+      f = computeField(vi, view, l, m);
+      if (cache.size > 400) cache.delete(cache.keys().next().value);
+      cache.set(key, f);
+    }
+    return f;
+  }
+
+  function normFor(v, view) {
+    if (view === "dispersion") return { min: 0, max: v.spread_max, center: null, lut: LUTS[META.view_luts.spread], digits: v.digits + 1, units: v.units };
+    if (view === "error") return { min: -v.error_max, max: v.error_max, center: 0, lut: LUTS[META.view_luts.error], digits: v.digits + 1, units: v.units };
+    if (view === "prob") return { min: 0, max: 1, center: null, lut: LUTS[META.view_luts.prob], digits: 0, units: "%", percent: true };
+    return { min: v.range[0], max: v.range[1], center: v.center, lut: LUTS[v.cmap], digits: v.digits, units: v.units };
+  }
+  function unit(n, x) {
+    if (n.center !== null && n.center !== undefined) {
+      return x < n.center ? 0.5 * (x - n.min) / (n.center - n.min) : 0.5 + 0.5 * (x - n.center) / (n.max - n.center);
+    }
+    return (x - n.min) / (n.max - n.min);
+  }
+
+  const lonTaps = new Int32Array(TW * 4);
+  const lonW = new Float32Array(TW * 4);
+  const latTaps = new Int32Array(TH * 4);
+  const latW = new Float32Array(TH * 4);
+  function cubic(t, w, o) {
+    const t2 = t * t;
+    const t3 = t2 * t;
+    w[o] = 0.5 * (-t3 + 2 * t2 - t);
+    w[o + 1] = 0.5 * (3 * t3 - 5 * t2 + 2);
+    w[o + 2] = 0.5 * (-3 * t3 + 4 * t2 + t);
+    w[o + 3] = 0.5 * (t3 - t2);
+  }
+  for (let x = 0; x < TW; x++) {
+    const lon = (x + 0.5) * 360 / TW;
+    const f = (((lon - LON[0]) / DLON) % W + W) % W;
+    const j = Math.floor(f);
+    for (let a = 0; a < 4; a++) lonTaps[x * 4 + a] = (((j - 1 + a) % W) + W) % W;
+    cubic(f - j, lonW, x * 4);
+  }
+  const polar = new Float32Array(TH);
+  const poleRow = new Int32Array(TH);
+  for (let y = 0; y < TH; y++) {
+    const lat = 90 - (y + 0.5) * 180 / TH;
+    if (lat < LAT[0]) { polar[y] = (LAT[0] - lat) / (LAT[0] + 90); poleRow[y] = 0; }
+    if (lat > LAT[H - 1]) { polar[y] = (lat - LAT[H - 1]) / (90 - LAT[H - 1]); poleRow[y] = H - 1; }
+    const f = clamp((lat - LAT[0]) / DLAT, 0, H - 1);
+    const i = Math.min(Math.floor(f), H - 2);
+    for (let a = 0; a < 4; a++) latTaps[y * 4 + a] = clamp(i - 1 + a, 0, H - 1);
+    cubic(f - i, latW, y * 4);
+  }
+
+  const SMOOTH = new Int32Array(H);
+  for (let i = 0; i < H; i++) SMOOTH[i] = Math.min(Math.max(0, Math.floor(0.5 * (1 / Math.max(Math.cos(LAT[i] * RAD), 1e-3) - 1))), (W >> 1) - 1);
+  function polarSmooth(field) {
+    const out = Float32Array.from(field);
+    for (let i = 0; i < H; i++) {
+      const hw = SMOOTH[i];
+      if (hw <= 0) continue;
+      for (let j = 0; j < W; j++) {
+        let sum = 0;
+        for (let a = -hw; a <= hw; a++) sum += field[i * W + ((((j + a) % W) + W) % W)];
+        out[i * W + j] = sum / (2 * hw + 1);
+      }
+    }
+    return out;
+  }
+
+  const tex = document.createElement("canvas");
+  tex.width = TW;
+  tex.height = TH;
+  const texCtx = tex.getContext("2d");
+  let texData = texCtx.createImageData(TW, TH);
+  let texKey = "";
+
+  function renderTexture() {
+    const key = S.v + "|" + S.view + "|" + S.lead + "|" + (S.view === "miembro" ? S.member : 0) + "|" + document.documentElement.dataset.theme;
+    if (key === texKey) return;
+    texKey = key;
+    const v = DATA[S.v];
+    const field = polarSmooth(getField(S.v, S.view, S.lead, S.member));
+    const n = normFor(v, S.view);
+    const tmp = new Float32Array(H * TW);
+    for (let i = 0; i < H; i++) {
+      const row = i * W;
+      for (let x = 0; x < TW; x++) {
+        const o = x * 4;
+        tmp[i * TW + x] = lonW[o] * field[row + lonTaps[o]] + lonW[o + 1] * field[row + lonTaps[o + 1]] + lonW[o + 2] * field[row + lonTaps[o + 2]] + lonW[o + 3] * field[row + lonTaps[o + 3]];
+      }
+    }
+    const poleMean = [0, 0];
+    for (const [slot, i] of [[0, 0], [1, H - 1]]) {
+      let sum = 0;
+      for (let j = 0; j < W; j++) sum += field[i * W + j];
+      poleMean[slot] = sum / W;
+    }
+    const px = texData.data;
+    const lut = n.lut;
+    for (let y = 0; y < TH; y++) {
+      const o = y * 4;
+      const r0 = latTaps[o] * TW, r1 = latTaps[o + 1] * TW, r2 = latTaps[o + 2] * TW, r3 = latTaps[o + 3] * TW;
+      const w0 = latW[o], w1 = latW[o + 1], w2 = latW[o + 2], w3 = latW[o + 3];
+      const blend = polar[y];
+      const pole = poleMean[poleRow[y] === 0 ? 0 : 1];
+      for (let x = 0; x < TW; x++) {
+        let val = w0 * tmp[r0 + x] + w1 * tmp[r1 + x] + w2 * tmp[r2 + x] + w3 * tmp[r3 + x];
+        if (blend > 0) val = val * (1 - blend) + pole * blend;
+        const p = (y * TW + x) * 4;
+        if (Number.isNaN(val)) { px[p + 3] = 0; continue; }
+        const c = clamp(Math.round(clamp(unit(n, val), 0, 1) * 255), 0, 255) * 3;
+        px[p] = lut[c];
+        px[p + 1] = lut[c + 1];
+        px[p + 2] = lut[c + 2];
+        px[p + 3] = 255;
+      }
+    }
+    texCtx.putImageData(texData, 0, 0);
+  }
+
+  const mapCanvas = $("map");
+  const mapCtx = mapCanvas.getContext("2d");
+  const mapWrap = $("map-wrap");
+  let view = { w: 0, h: 0, dpr: 1 };
+  let globeCache = null;
+  let globeImage = null;
+
+  function sizeCanvas(canvas, ctx, box, scale = 1) {
+    const rect = box.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2) * scale;
+    const w = Math.max(1, Math.round(rect.width * dpr));
+    const h = Math.max(1, Math.round(rect.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: rect.width, h: rect.height, dpr };
+  }
+
+  function globeGeom() {
+    const r = Math.min(view.w, view.h) * 0.46;
+    return { cx: view.w / 2, cy: view.h / 2, r };
+  }
+
+  function project(lat, lon) {
+    if (S.proj === "mapa") {
+      const x = ((((lon - S.center + 180) % 360) + 360) % 360) / 360 * view.w;
+      return [x, (90 - lat) / 180 * view.h, true];
+    }
+    const g = globeGeom();
+    const phi = lat * RAD, lam = (lon - S.rot.lam) * RAD, phi0 = S.rot.phi * RAD;
+    const cosc = Math.sin(phi0) * Math.sin(phi) + Math.cos(phi0) * Math.cos(phi) * Math.cos(lam);
+    const x = g.r * Math.cos(phi) * Math.sin(lam);
+    const y = g.r * (Math.cos(phi0) * Math.sin(phi) - Math.sin(phi0) * Math.cos(phi) * Math.cos(lam));
+    return [g.cx + x, g.cy - y, cosc >= 0];
+  }
+
+  function unproject(px, py) {
+    if (S.proj === "mapa") {
+      const lat = 90 - (py / view.h) * 180;
+      const lon = wrapLon(S.center - 180 + (px / view.w) * 360);
+      return Math.abs(lat) <= 90 ? [lat, lon] : null;
+    }
+    const g = globeGeom();
+    const x = (px - g.cx) / g.r, y = -(py - g.cy) / g.r;
+    const rho = Math.hypot(x, y);
+    if (rho > 1) return null;
+    const c = Math.asin(rho);
+    const phi0 = S.rot.phi * RAD;
+    if (rho === 0) return [S.rot.phi, wrapLon(S.rot.lam)];
+    const lat = Math.asin(Math.cos(c) * Math.sin(phi0) + (y * Math.sin(c) * Math.cos(phi0)) / rho) / RAD;
+    const lon = S.rot.lam + Math.atan2(x * Math.sin(c), rho * Math.cos(c) * Math.cos(phi0) - y * Math.sin(c) * Math.sin(phi0)) / RAD;
+    return [lat, wrapLon(lon)];
+  }
+
+  function buildGlobeCache(scale) {
+    const g = globeGeom();
+    const dpr = view.dpr * scale;
+    const size = Math.ceil(2 * g.r * dpr) + 2;
+    const x0 = g.cx - size / (2 * dpr), y0 = g.cy - size / (2 * dpr);
+    const idx = new Int32Array(size * size).fill(-1);
+    const fx = new Float32Array(size * size);
+    const fy = new Float32Array(size * size);
+    const shade = new Float32Array(size * size);
+    const phi0 = S.rot.phi * RAD;
+    const sp0 = Math.sin(phi0), cp0 = Math.cos(phi0);
+    for (let j = 0; j < size; j++) {
+      const y = -((y0 + (j + 0.5) / dpr) - g.cy) / g.r;
+      for (let i = 0; i < size; i++) {
+        const x = ((x0 + (i + 0.5) / dpr) - g.cx) / g.r;
+        const rho2 = x * x + y * y;
+        if (rho2 > 1) continue;
+        const rho = Math.sqrt(rho2);
+        const cosc = Math.sqrt(1 - rho2);
+        const lat = rho === 0 ? phi0 : Math.asin(cosc * sp0 + y * cp0);
+        const lon = S.rot.lam * RAD + Math.atan2(x, cosc * cp0 - y * sp0);
+        const tx = ((((lon / RAD) % 360) + 360) % 360) / 360 * TW - 0.5;
+        const ty = (90 - lat / RAD) / 180 * TH - 0.5;
+        const p = j * size + i;
+        idx[p] = 1;
+        fx[p] = tx;
+        fy[p] = clamp(ty, 0, TH - 1);
+        shade[p] = 0.8 + 0.2 * cosc;
+      }
+    }
+    globeCache = { size, x0, y0, dpr, idx, fx, fy, shade, key: S.rot.lam + "|" + S.rot.phi + "|" + view.w + "|" + view.h + "|" + scale };
+    globeImage = new ImageData(size, size);
+  }
+
+  function drawGlobeImage(scale) {
+    const key = S.rot.lam + "|" + S.rot.phi + "|" + view.w + "|" + view.h + "|" + scale;
+    if (!globeCache || globeCache.key !== key) buildGlobeCache(scale);
+    const { size, idx, fx, fy, shade } = globeCache;
+    const src = texData.data;
+    const out = globeImage.data;
+    for (let p = 0; p < size * size; p++) {
+      const o = p * 4;
+      if (idx[p] < 0) { out[o + 3] = 0; continue; }
+      let x = fx[p];
+      const y = fy[p];
+      const xi = Math.floor(x), yi = Math.floor(y);
+      const tx = x - xi, ty = y - yi;
+      const x0 = ((xi % TW) + TW) % TW, x1 = (x0 + 1) % TW;
+      const y0 = yi, y1 = Math.min(yi + 1, TH - 1);
+      const a = (y0 * TW + x0) * 4, b = (y0 * TW + x1) * 4, c = (y1 * TW + x0) * 4, d = (y1 * TW + x1) * 4;
+      const s = shade[p];
+      for (let ch = 0; ch < 3; ch++) {
+        const top = src[a + ch] + (src[b + ch] - src[a + ch]) * tx;
+        const bot = src[c + ch] + (src[d + ch] - src[c + ch]) * tx;
+        out[o + ch] = (top + (bot - top) * ty) * s;
+      }
+      out[o + 3] = Math.min(src[a + 3], src[d + 3]);
+    }
+    const tmp = document.createElement("canvas");
+    tmp.width = size;
+    tmp.height = size;
+    tmp.getContext("2d").putImageData(globeImage, 0, 0);
+    return { canvas: tmp, x0: globeCache.x0, y0: globeCache.y0, w: size / globeCache.dpr };
+  }
+
+  function strokePath(points, ctx) {
+    let open = false;
+    let prev = null;
+    for (const [x, y, ok] of points) {
+      if (!ok) { open = false; prev = null; continue; }
+      if (!open || (S.proj === "mapa" && prev && Math.abs(x - prev[0]) > view.w / 2)) { ctx.moveTo(x, y); open = true; }
+      else ctx.lineTo(x, y);
+      prev = [x, y];
+    }
+  }
+
+  const COAST = META.coast.map((line) => {
+    const pts = new Float32Array(line.length);
+    for (let i = 0; i < line.length; i++) pts[i] = line[i] / 10;
+    return pts;
+  });
+
+  function drawCoast(ctx) {
+    ctx.beginPath();
+    for (const line of COAST) {
+      const pts = [];
+      for (let i = 0; i < line.length; i += 2) pts.push(project(line[i + 1], line[i]));
+      strokePath(pts, ctx);
+    }
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(14,14,14,0.82)";
+    ctx.lineWidth = 0.95;
+    ctx.stroke();
+  }
+
+  function drawGraticule(ctx) {
+    ctx.beginPath();
+    for (let lat = -60; lat <= 60; lat += 30) {
+      const pts = [];
+      for (let lon = -180; lon <= 180; lon += 3) pts.push(project(lat, lon));
+      strokePath(pts, ctx);
+    }
+    for (let lon = -180; lon < 180; lon += 30) {
+      const pts = [];
+      for (let lat = -88; lat <= 88; lat += 3) pts.push(project(lat, lon));
+      strokePath(pts, ctx);
+    }
+    ctx.strokeStyle = "rgba(255,255,255,0.16)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  let contourKey = "";
+  let contourSegs = [];
+  function contourLevels(field, step) {
+    let lo = Infinity, hi = -Infinity;
+    for (let k = 0; k < field.length; k++) { const x = field[k]; if (x < lo) lo = x; if (x > hi) hi = x; }
+    if (!Number.isFinite(lo) || !(step > 0)) return [];
+    const levels = [];
+    for (let c = Math.ceil(lo / step) * step; c <= hi && levels.length < 80; c += step) levels.push(c);
+    return levels;
+  }
+  function computeContours() {
+    const v = DATA[S.v];
+    const key = S.v + "|" + S.view + "|" + S.lead + "|" + S.member;
+    if (key === contourKey) return contourSegs;
+    contourKey = key;
+    const field = polarSmooth(getField(S.v, S.view, S.lead, S.member));
+    const F = 3;
+    const GW = W * F, GH = (H - 1) * F + 1;
+    const grid = new Float32Array(GW * GH);
+    const wx = new Float32Array(4), wy = new Float32Array(4);
+    const row = new Float32Array(H * GW);
+    for (let i = 0; i < H; i++) {
+      for (let x = 0; x < GW; x++) {
+        const f = x / F, j = Math.floor(f);
+        cubic(f - j, wx, 0);
+        let s = 0;
+        for (let a = 0; a < 4; a++) s += wx[a] * field[i * W + ((((j - 1 + a) % W) + W) % W)];
+        row[i * GW + x] = s;
+      }
+    }
+    for (let y = 0; y < GH; y++) {
+      const f = y / F, i = Math.min(Math.floor(f), H - 2);
+      cubic(f - i, wy, 0);
+      for (let x = 0; x < GW; x++) {
+        let s = 0;
+        for (let a = 0; a < 4; a++) s += wy[a] * row[clamp(i - 1 + a, 0, H - 1) * GW + x];
+        grid[y * GW + x] = s;
+      }
+    }
+    let step = v.contour;
+    if (S.view === "dispersion") step = niceStep(v.spread_max / 6);
+    if (S.view === "error") step = niceStep(v.error_max / 4);
+    if (S.view === "prob") step = 0.25;
+    const levels = contourLevels(grid, step);
+    const segs = [];
+    const toLL = (gx, gy) => [LAT[0] + (gy / F) * DLAT, LON[0] + (gx / F) * DLON];
+    for (const c of levels) {
+      for (let y = 0; y < GH - 1; y++) {
+        for (let x = 0; x < GW; x++) {
+          const x1 = (x + 1) % GW;
+          const a = grid[y * GW + x], b = grid[y * GW + x1], d = grid[(y + 1) * GW + x], e = grid[(y + 1) * GW + x1];
+          const idx = (a >= c ? 8 : 0) | (b >= c ? 4 : 0) | (e >= c ? 2 : 0) | (d >= c ? 1 : 0);
+          if (idx === 0 || idx === 15) continue;
+          const top = () => toLL(x + (c - a) / (b - a), y);
+          const right = () => toLL(x + 1, y + (c - b) / (e - b));
+          const bottom = () => toLL(x + (c - d) / (e - d), y + 1);
+          const left = () => toLL(x, y + (c - a) / (d - a));
+          const add = (p, q) => segs.push(p[0], p[1], q[0], q[1]);
+          switch (idx) {
+            case 1: case 14: add(left(), bottom()); break;
+            case 2: case 13: add(bottom(), right()); break;
+            case 3: case 12: add(left(), right()); break;
+            case 4: case 11: add(top(), right()); break;
+            case 6: case 9: add(top(), bottom()); break;
+            case 7: case 8: add(left(), top()); break;
+            case 5: { const mid = (a + b + d + e) / 4; if (mid >= c) { add(left(), top()); add(bottom(), right()); } else { add(left(), bottom()); add(top(), right()); } break; }
+            case 10: { const mid = (a + b + d + e) / 4; if (mid >= c) { add(left(), bottom()); add(top(), right()); } else { add(left(), top()); add(bottom(), right()); } break; }
+            default: break;
+          }
+        }
+      }
+    }
+    contourSegs = segs;
+    return segs;
+  }
+
+  function drawContours(ctx) {
+    const segs = computeContours();
+    ctx.beginPath();
+    for (let i = 0; i < segs.length; i += 4) {
+      const p = project(segs[i], segs[i + 1]);
+      const q = project(segs[i + 2], segs[i + 3]);
+      if (!p[2] || !q[2]) continue;
+      if (S.proj === "mapa" && Math.abs(p[0] - q[0]) > view.w / 2) continue;
+      ctx.moveTo(p[0], p[1]);
+      ctx.lineTo(q[0], q[1]);
+    }
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "rgba(255,255,255,0.32)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(16,16,16,0.62)";
+    ctx.lineWidth = 0.85;
+    ctx.stroke();
+  }
+
+  function drawMarker(ctx) {
+    const [x, y, ok] = project(S.point.lat, S.point.lon);
+    if (!ok) return;
+    ctx.beginPath();
+    ctx.arc(x, y, 9, 0, 2 * Math.PI);
+    ctx.fillStyle = "rgba(11,11,11,0.18)";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, 3.6, 0, 2 * Math.PI);
+    ctx.fillStyle = "#0b0b0b";
+    ctx.fill();
+  }
+
+  let dragging = false;
+  function drawMap() {
+    view = sizeCanvas(mapCanvas, mapCtx, mapWrap);
+    renderTexture();
+    const ctx = mapCtx;
+    ctx.clearRect(0, 0, view.w, view.h);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    if (S.proj === "mapa") {
+      const sx = ((((S.center - 180) % 360) + 360) % 360) / 360 * TW;
+      const w1 = (TW - sx) / TW * view.w;
+      ctx.drawImage(tex, sx, 0, TW - sx, TH, 0, 0, w1 + 0.6, view.h);
+      if (sx > 0) ctx.drawImage(tex, 0, 0, sx, TH, w1, 0, view.w - w1, view.h);
+    } else {
+      const g = globeGeom();
+      const glow = ctx.createRadialGradient(g.cx, g.cy, g.r * 0.96, g.cx, g.cy, g.r * 1.12);
+      glow.addColorStop(0, "rgba(120,170,255,0.35)");
+      glow.addColorStop(1, "rgba(120,170,255,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(g.cx, g.cy, g.r * 1.12, 0, 2 * Math.PI);
+      ctx.fill();
+      const img = drawGlobeImage(dragging ? 0.5 : 1);
+      ctx.drawImage(img.canvas, img.x0, img.y0, img.w, img.w);
+    }
+    ctx.save();
+    if (S.proj === "globo") {
+      const g = globeGeom();
+      ctx.beginPath();
+      ctx.arc(g.cx, g.cy, g.r, 0, 2 * Math.PI);
+      ctx.clip();
+    }
+    drawGraticule(ctx);
+    if (S.iso) drawContours(ctx);
+    drawCoast(ctx);
+    ctx.restore();
+    if (S.proj === "globo") {
+      const g = globeGeom();
+      ctx.beginPath();
+      ctx.arc(g.cx, g.cy, g.r, 0, 2 * Math.PI);
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    drawMarker(ctx);
+    const v = DATA[S.v];
+    const field = getField(S.v, S.view, S.lead, S.member);
+    const missing = !field.some((x) => !Number.isNaN(x));
+    $("overlay").textContent = missing ? "Sin datos de " + META.truth_label + " para este plazo" : "";
+    $("overlay").classList.toggle("show", missing);
+    $("hint").textContent = S.proj === "mapa" ? "arrastrá para mover el mapa" : "arrastrá para girar el globo";
+    mapWrap.classList.toggle("globe", S.proj === "globo");
+    void v;
+  }
+
+  function niceStep(raw) {
+    if (!(raw > 0)) return 1;
+    const p = Math.pow(10, Math.floor(Math.log10(raw)));
+    const m = raw / p;
+    return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p;
+  }
+  function niceTicks(lo, hi, count) {
+    const step = niceStep((hi - lo) / Math.max(count, 1));
+    const out = [];
+    for (let t = Math.ceil(lo / step) * step; t <= hi + step * 1e-6; t += step) out.push(Math.abs(t) < step * 1e-9 ? 0 : t);
+    return { ticks: out, step };
+  }
+  function decimals(step) { return Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); }
+
+  function drawColorbar() {
+    const canvas = $("cbar");
+    const ctx = canvas.getContext("2d");
+    const box = sizeCanvas(canvas, ctx, canvas);
+    const v = DATA[S.v];
+    const n = normFor(v, S.view);
+    const pad = 10, top = 4, bh = 12, w = box.w - 2 * pad;
+    ctx.clearRect(0, 0, box.w, box.h);
+    const grad = ctx.createLinearGradient(pad, 0, pad + w, 0);
+    for (let i = 0; i <= 32; i++) {
+      const t = i / 32;
+      const x = n.min + (n.max - n.min) * t;
+      const c = Math.round(clamp(unit(n, x), 0, 1) * 255) * 3;
+      grad.addColorStop(t, "rgb(" + n.lut[c] + "," + n.lut[c + 1] + "," + n.lut[c + 2] + ")");
+    }
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(pad, top, w, bh, 4);
+    ctx.fill();
+    const scale = n.percent ? 100 : 1;
+    const { ticks, step } = niceTicks(n.min * scale, n.max * scale, Math.max(3, Math.floor(w / 70)));
+    ctx.fillStyle = css("--ink-2");
+    ctx.strokeStyle = css("--axis");
+    ctx.font = "11.5px " + css("--font");
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const dec = decimals(step);
+    for (const t of ticks) {
+      const x = pad + ((t / scale - n.min) / (n.max - n.min)) * w;
+      if (x < pad - 0.5 || x > pad + w + 0.5) continue;
+      ctx.beginPath();
+      ctx.moveTo(x, top + bh);
+      ctx.lineTo(x, top + bh + 4);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      const label = fmt(t, dec);
+      const half = ctx.measureText(label).width / 2;
+      ctx.fillText(label, clamp(x, half + 1, box.w - half - 1), top + bh + 6);
+    }
+    $("units").textContent = S.view === "prob" ? "probabilidad (%)" : S.view === "dispersion" ? "desvío en " + v.units : v.units;
+  }
+
+  function bilinearWeights(lat, lon) {
+    const fi = clamp((lat - LAT[0]) / DLAT, 0, H - 1);
+    const i0 = Math.min(Math.floor(fi), H - 2), ti = fi - i0;
+    const fj = ((((lon - LON[0]) / DLON) % W) + W) % W;
+    const j0 = Math.floor(fj) % W, j1 = (j0 + 1) % W, tj = fj - Math.floor(fj);
+    return [
+      [i0 * W + j0, (1 - ti) * (1 - tj)], [i0 * W + j1, (1 - ti) * tj],
+      [(i0 + 1) * W + j0, ti * (1 - tj)], [(i0 + 1) * W + j1, ti * tj],
+    ];
+  }
+  function sampleField(field, wts) {
+    let s = 0;
+    for (const [k, w] of wts) s += field[k] * w;
+    return s;
+  }
+
+  let series = null;
+  function computeSeries() {
+    const v = DATA[S.v];
+    const wts = bilinearWeights(S.point.lat, S.point.lon);
+    const mean = new Float64Array(L), truth = new Float64Array(L).fill(NaN), thr = new Float64Array(L).fill(NaN);
+    const members = new Float64Array(M * L);
+    const p10 = new Float64Array(L), p90 = new Float64Array(L), prob = new Float64Array(L).fill(NaN), spread = new Float64Array(L);
+    for (let l = 0; l < L; l++) {
+      let m0 = 0;
+      for (const [k, w] of wts) { const q = v.mean[l * N + k]; m0 += (v.lo + q * v.step) * w; }
+      mean[l] = m0;
+      if (v.truth) {
+        let t = 0, bad = false;
+        for (const [k, w] of wts) { const q = v.truth[l * N + k]; if (q === 65535) bad = true; t += (v.lo + q * v.step) * w; }
+        truth[l] = bad ? NaN : t;
+      }
+      if (v.thr) {
+        let t = 0;
+        for (const [k, w] of wts) t += (v.lo + v.thr[l * N + k] * v.step) * w;
+        thr[l] = t;
+      }
+      const vals = new Float64Array(M);
+      for (let j = 0; j < M; j++) {
+        let d = 0;
+        const o = (l * M + j) * N;
+        for (const [k, w] of wts) d += v.dev[o + k] * w;
+        vals[j] = m0 + d * v.dev_scale[l];
+        members[j * L + l] = vals[j];
+      }
+      let sm = 0, sq = 0;
+      for (let j = 0; j < M; j++) { sm += vals[j]; sq += vals[j] * vals[j]; }
+      spread[l] = M > 1 ? Math.sqrt(Math.max(0, (sq - (sm * sm) / M) / (M - 1))) : 0;
+      const sorted = Array.from(vals).sort((a, b) => a - b);
+      const q = (p) => { const x = p * (M - 1); const i = Math.floor(x); return sorted[i] + (sorted[Math.min(i + 1, M - 1)] - sorted[i]) * (x - i); };
+      p10[l] = q(0.1);
+      p90[l] = q(0.9);
+      if (v.thr) prob[l] = vals.filter((x) => x > thr[l]).length / M;
+    }
+    series = { mean, truth, thr, members, p10, p90, prob, spread };
+  }
+
+  function chartFrame(canvasId, boxId) {
+    const canvas = $(canvasId);
+    const ctx = canvas.getContext("2d");
+    const box = sizeCanvas(canvas, ctx, $(boxId));
+    ctx.clearRect(0, 0, box.w, box.h);
+    return { canvas, ctx, box };
+  }
+
+  function axes(ctx, box, ymin, ymax, digits, pad) {
+    const pw = box.w - pad.l - pad.r, ph = box.h - pad.t - pad.b;
+    const maxH = META.lead_hours[L - 1] || 1;
+    const X = (h) => pad.l + (h / maxH) * pw;
+    const Y = (y) => pad.t + (1 - (y - ymin) / (ymax - ymin)) * ph;
+    const { ticks, step } = niceTicks(ymin, ymax, Math.max(3, Math.floor(ph / 42)));
+    ctx.font = "11px " + css("--font");
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "right";
+    ctx.lineWidth = 1;
+    const dec = digits === null ? decimals(step) : digits;
+    for (const t of ticks) {
+      const y = Math.round(Y(t)) + 0.5;
+      ctx.strokeStyle = css("--grid");
+      ctx.beginPath();
+      ctx.moveTo(pad.l, y);
+      ctx.lineTo(pad.l + pw, y);
+      ctx.stroke();
+      ctx.fillStyle = css("--muted");
+      ctx.fillText(fmt(t, dec), pad.l - 7, y);
+    }
+    const days = Math.floor(maxH / 24);
+    const every = days > 8 ? 2 : 1;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    for (let d = 0; d <= days; d += every) {
+      const x = Math.round(X(d * 24)) + 0.5;
+      ctx.strokeStyle = css("--grid");
+      ctx.beginPath();
+      ctx.moveTo(x, pad.t + ph);
+      ctx.lineTo(x, pad.t + ph + 4);
+      ctx.stroke();
+      ctx.fillStyle = css("--muted");
+      ctx.fillText(d === 0 ? "0" : d + " d", x, pad.t + ph + 7);
+    }
+    ctx.strokeStyle = css("--axis");
+    ctx.beginPath();
+    ctx.moveTo(pad.l, Math.round(pad.t + ph) + 0.5);
+    ctx.lineTo(pad.l + pw, Math.round(pad.t + ph) + 0.5);
+    ctx.stroke();
+    return { X, Y, pw, ph };
+  }
+
+  function line(ctx, X, Y, values, color, width, dash) {
+    ctx.beginPath();
+    let open = false;
+    for (let l = 0; l < L; l++) {
+      const y = values[l];
+      if (!Number.isFinite(y)) { open = false; continue; }
+      const px = X(META.lead_hours[l]), py = Y(y);
+      if (!open) { ctx.moveTo(px, py); open = true; } else ctx.lineTo(px, py);
+    }
+    ctx.setLineDash(dash || []);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function withAlpha(color, alpha) {
+    const c = color.replace("#", "");
+    const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
+    return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+  }
+
+  let plumeGeom = null;
+  function drawPlume() {
+    if (!series) computeSeries();
+    const v = DATA[S.v];
+    const { ctx, box } = chartFrame("plume", "plume-box");
+    let lo = Infinity, hi = -Infinity;
+    const take = (x) => { if (Number.isFinite(x)) { lo = Math.min(lo, x); hi = Math.max(hi, x); } };
+    series.members.forEach(take);
+    series.truth.forEach(take);
+    series.thr.forEach(take);
+    const padY = (hi - lo) * 0.08 || 1;
+    lo -= padY;
+    hi += padY;
+    const pad = { l: 44, r: 10, t: 8, b: 24 };
+    const { X, Y } = axes(ctx, box, lo, hi, null, pad);
+    plumeGeom = { X, pad, box };
+    const accent = css("--accent");
+    ctx.beginPath();
+    for (let l = 0; l < L; l++) ctx.lineTo(X(META.lead_hours[l]), Y(series.p90[l]));
+    for (let l = L - 1; l >= 0; l--) ctx.lineTo(X(META.lead_hours[l]), Y(series.p10[l]));
+    ctx.closePath();
+    ctx.fillStyle = withAlpha(accent, 0.14);
+    ctx.fill();
+    for (let j = 0; j < M; j++) {
+      const vals = series.members.subarray(j * L, (j + 1) * L);
+      const chosen = S.view === "miembro" && j === S.member;
+      if (!chosen) line(ctx, X, Y, vals, withAlpha(accent, 0.3), 1);
+    }
+    if (S.view === "miembro") line(ctx, X, Y, series.members.subarray(S.member * L, (S.member + 1) * L), css("--member"), 1.8);
+    if (v.has_threshold) line(ctx, X, Y, series.thr, css("--accent-2"), 1.5, [5, 4]);
+    line(ctx, X, Y, series.mean, accent, 2.4);
+    if (v.has_truth) {
+      line(ctx, X, Y, series.truth, css("--truth"), 2);
+      ctx.fillStyle = css("--truth");
+      for (let l = 0; l < L; l++) {
+        if (!Number.isFinite(series.truth[l])) continue;
+        ctx.beginPath();
+        ctx.arc(X(META.lead_hours[l]), Y(series.truth[l]), 2.2, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    }
+    const lead = S.hoverLead !== null ? S.hoverLead : S.lead;
+    const x = Math.round(X(META.lead_hours[lead])) + 0.5;
+    ctx.strokeStyle = css("--muted");
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, pad.t);
+    ctx.lineTo(x, box.h - pad.b);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, Y(series.mean[lead]), 4.5, 0, 2 * Math.PI);
+    ctx.fillStyle = accent;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = css("--card");
+    ctx.stroke();
+    drawReadout(lead);
+  }
+
+  function stat(label, value, small) {
+    return "<dt>" + label + "</dt><dd>" + value + (small ? " <small>" + small + "</small>" : "") + "</dd>";
+  }
+  function drawReadout(l) {
+    const v = DATA[S.v];
+    const d = v.digits;
+    const parts = [
+      stat("Media del ensamble · " + leadText(l), fmt(series.mean[l], d), v.units),
+      stat("Rango P10–P90", fmt(series.p10[l], d) + " a " + fmt(series.p90[l], d), v.units),
+    ];
+    if (v.has_truth) parts.push(stat(META.truth_label, fmt(series.truth[l], d), Number.isFinite(series.truth[l]) ? v.units : ""));
+    parts.push(stat("Dispersión (desvío)", fmt(series.spread[l], d + 1), v.units));
+    if (v.has_threshold) parts.push(stat("Prob. de superar el p90 (" + fmt(series.thr[l], d) + ")", fmt(series.prob[l] * 100, 0) + " %", ""));
+    $("readout").innerHTML = parts.join("");
+  }
+
+  function plumeLegend() {
+    const v = DATA[S.v];
+    const accent = css("--accent");
+    const items = [
+      '<span><i style="border-color:' + accent + '"></i>media</span>',
+      '<span><i class="band" style="background:' + withAlpha(accent, 0.25) + '"></i>P10–P90</span>',
+      '<span><i class="thin" style="border-color:' + accent + '"></i>miembros</span>',
+    ];
+    if (S.view === "miembro") items.push('<span><i style="border-color:' + css("--member") + '"></i>' + (S.member === 0 ? "control" : "miembro " + S.member) + "</span>");
+    if (v.has_truth) items.push('<span><i style="border-color:' + css("--truth") + '"></i>' + META.truth_label + "</span>");
+    if (v.has_threshold) items.push('<span><i class="dash" style="border-color:' + css("--accent-2") + '"></i>p90 clim.</span>');
+    $("plume-legend").innerHTML = items.join("");
+    $("point").textContent = S.point.name + " · " + fmtCoord(S.point.lat, S.point.lon);
+  }
+
+  let skill = null;
+  function computeSkill() {
+    const v = DATA[S.v];
+    const rmse = new Float64Array(L).fill(NaN), spread = new Float64Array(L);
+    for (let l = 0; l < L; l++) {
+      const sp = getField(S.v, "dispersion", l, 0);
+      const mean = getField(S.v, "media", l, 0);
+      let s2 = 0, e2 = 0, wsum = 0;
+      const truth = v.has_truth ? getField(S.v, "verdad", l, 0) : null;
+      let bad = false;
+      for (let i = 0; i < H; i++) {
+        const w = AREA[i];
+        for (let j = 0; j < W; j++) {
+          const k = i * W + j;
+          s2 += w * sp[k] * sp[k];
+          if (truth) { const e = mean[k] - truth[k]; if (Number.isNaN(e)) bad = true; e2 += w * e * e; }
+          wsum += w;
+        }
+      }
+      spread[l] = Math.sqrt(s2 / wsum);
+      if (truth && !bad) rmse[l] = Math.sqrt(e2 / wsum);
+    }
+    skill = { rmse, spread };
+  }
+
+  let skillGeom = null;
+  function drawSkill() {
+    if (!skill) computeSkill();
+    const v = DATA[S.v];
+    const { ctx, box } = chartFrame("skill", "skill-box");
+    let hi = 0;
+    skill.rmse.forEach((x) => { if (Number.isFinite(x)) hi = Math.max(hi, x); });
+    skill.spread.forEach((x) => { hi = Math.max(hi, x); });
+    hi = hi * 1.12 || 1;
+    const pad = { l: 44, r: 10, t: 8, b: 24 };
+    const { X, Y } = axes(ctx, box, 0, hi, null, pad);
+    skillGeom = { X, pad, box };
+    line(ctx, X, Y, skill.spread, css("--accent-2"), 2);
+    if (v.has_truth) line(ctx, X, Y, skill.rmse, css("--accent"), 2.2);
+    const x = Math.round(X(META.lead_hours[S.lead])) + 0.5;
+    ctx.strokeStyle = css("--muted");
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, pad.t);
+    ctx.lineTo(x, box.h - pad.b);
+    ctx.stroke();
+    const items = [];
+    if (v.has_truth) items.push('<span><i style="border-color:' + css("--accent") + '"></i>RMSE de la media vs ' + META.truth_label + "</span>");
+    items.push('<span><i style="border-color:' + css("--accent-2") + '"></i>dispersión</span>');
+    $("skill-legend").innerHTML = items.join("");
+    $("skill-title").textContent = (v.has_truth ? "Error global vs dispersión" : "Dispersión global") + " · " + v.units;
+  }
+
+  function drawTicks() {
+    const ticks = $("ticks");
+    const maxH = META.lead_hours[L - 1] || 1;
+    const days = Math.floor(maxH / 24);
+    const every = days > 8 ? 2 : 1;
+    let html = "";
+    for (let d = 0; d <= days; d += every) html += '<span style="left:calc(9px + (100% - 18px) * ' + (d * 24) / maxH + ')">' + (d === 0 ? "0" : d + " d") + "</span>";
+    ticks.innerHTML = html;
+  }
+
+  function updateHeader() {
+    const v = DATA[S.v];
+    $("map-title").innerHTML = v.label + ' <span>· ' + VIEW_TITLES[S.view] + (S.view === "miembro" ? " " + S.member + (S.member === 0 ? " (control)" : "") : "") + "</span>";
+    $("valid").innerHTML = "Válido <b>" + fmtDate(validDate(S.lead), shortFmt) + "</b> · " + leadText(S.lead);
+    $("lead-badge").textContent = leadText(S.lead);
+    const lead = $("lead");
+    lead.value = S.lead;
+    lead.style.setProperty("--fill", (L > 1 ? (S.lead / (L - 1)) * 100 : 0) + "%");
+    $("member-field").style.display = S.view === "miembro" ? "" : "none";
+    $("mlabel").textContent = S.member === 0 ? "control" : S.member + " de " + (M - 1);
+    $("member").value = S.member;
+    for (const b of $("view").children) {
+      const spec = VIEWS.find((x) => x.id === b.dataset.v);
+      b.disabled = Boolean(spec.needs && !v[spec.needs]);
+      b.setAttribute("aria-pressed", String(b.dataset.v === S.view));
+    }
+    for (const b of $("proj").children) b.setAttribute("aria-pressed", String(b.dataset.v === S.proj));
+  }
+
+  let frame = 0;
+  function render(what = {}) {
+    if (what.series) { series = null; }
+    if (what.skill) { skill = null; }
+    updateHeader();
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      drawMap();
+      drawColorbar();
+      plumeLegend();
+      drawPlume();
+      drawSkill();
+    });
+  }
+
+  function setView(id) {
+    const v = DATA[S.v];
+    const spec = VIEWS.find((x) => x.id === id);
+    if (!spec || (spec.needs && !v[spec.needs])) id = "media";
+    S.view = id;
+    S.iso = $("iso").checked;
+    render();
+  }
+
+  function setVariable(i) {
+    S.v = i;
+    const v = DATA[i];
+    const spec = VIEWS.find((x) => x.id === S.view);
+    if (spec.needs && !v[spec.needs]) S.view = "media";
+    $("iso").checked = Boolean(v.contours);
+    S.iso = $("iso").checked;
+    render({ series: true, skill: true });
+  }
+
+  function setLead(l) {
+    S.lead = clamp(l, 0, L - 1);
+    render();
+  }
+
+  function setPoint(name, lat, lon) {
+    S.point = { name, lat, lon };
+    render({ series: true });
+  }
+
+  let timer = 0;
+  let last = 0;
+  function tick(t) {
+    if (!S.playing) return;
+    const interval = 650 / S.speed;
+    if (t - last >= interval) {
+      last = t;
+      S.lead = S.lead >= L - 1 ? 0 : S.lead + 1;
+      render();
+    }
+    timer = requestAnimationFrame(tick);
+  }
+  function setPlaying(on) {
+    S.playing = on;
+    $("play").classList.toggle("on", on);
+    $("play").setAttribute("aria-label", on ? "Pausar animación" : "Reproducir animación");
+    cancelAnimationFrame(timer);
+    if (on) { last = 0; timer = requestAnimationFrame(tick); }
+  }
+
+  function fieldValueAt(lat, lon) {
+    const field = getField(S.v, S.view, S.lead, S.member);
+    return sampleField(field, bilinearWeights(lat, lon));
+  }
+
+  function showTip(tip, html, x, y, box) {
+    tip.innerHTML = html;
+    tip.hidden = false;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let left = x + 14, top = y + 14;
+    if (left + w > box.width - 4) left = x - w - 14;
+    if (top + h > box.height - 4) top = y - h - 14;
+    tip.style.left = Math.max(4, left) + "px";
+    tip.style.top = Math.max(4, top) + "px";
+  }
+
+  function setupMap() {
+    let start = null;
+    let moved = false;
+    mapCanvas.addEventListener("pointerdown", (e) => {
+      start = { x: e.clientX, y: e.clientY, center: S.center, lam: S.rot.lam, phi: S.rot.phi };
+      moved = false;
+      mapCanvas.setPointerCapture(e.pointerId);
+    });
+    mapCanvas.addEventListener("pointermove", (e) => {
+      const rect = mapCanvas.getBoundingClientRect();
+      const px = e.clientX - rect.left, py = e.clientY - rect.top;
+      if (start) {
+        const dx = e.clientX - start.x, dy = e.clientY - start.y;
+        if (!moved && Math.hypot(dx, dy) > 4) { moved = true; dragging = true; mapCanvas.classList.add("dragging"); $("tip").hidden = true; }
+        if (moved) {
+          if (S.proj === "mapa") S.center = wrapLon(start.center - (dx / rect.width) * 360);
+          else {
+            const g = globeGeom();
+            S.rot.lam = wrapLon(start.lam - (dx / g.r) * 57.3 * 0.9);
+            S.rot.phi = clamp(start.phi + (dy / g.r) * 57.3 * 0.9, -85, 85);
+          }
+          drawMap();
+        }
+        return;
+      }
+      const ll = unproject(px, py);
+      if (!ll) { $("tip").hidden = true; return; }
+      const v = DATA[S.v];
+      const n = normFor(v, S.view);
+      const value = fieldValueAt(ll[0], ll[1]);
+      const text = n.percent ? fmt(value * 100, 0) + " %" : fmt(value, n.digits) + " " + v.units;
+      showTip($("tip"), "<b>" + text + '</b><br><span class="k">' + fmtCoord(ll[0], ll[1]) + "</span>", px, py, rect);
+    });
+    const finish = (e) => {
+      if (!start) return;
+      const wasMoved = moved;
+      start = null;
+      dragging = false;
+      mapCanvas.classList.remove("dragging");
+      if (wasMoved) { drawMap(); return; }
+      const rect = mapCanvas.getBoundingClientRect();
+      const ll = unproject(e.clientX - rect.left, e.clientY - rect.top);
+      if (ll) {
+        $("place").value = "";
+        setPoint("Punto elegido", ll[0], ll[1]);
+      }
+    };
+    mapCanvas.addEventListener("pointerup", finish);
+    mapCanvas.addEventListener("pointercancel", () => { start = null; dragging = false; mapCanvas.classList.remove("dragging"); drawMap(); });
+    mapCanvas.addEventListener("pointerleave", () => { if (!start) $("tip").hidden = true; });
+  }
+
+  function setupChart(canvasId, tipId, getGeom, html) {
+    const canvas = $(canvasId);
+    canvas.addEventListener("pointermove", (e) => {
+      const g = getGeom();
+      if (!g) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      let best = 0;
+      for (let l = 0; l < L; l++) if (Math.abs(g.X(META.lead_hours[l]) - x) < Math.abs(g.X(META.lead_hours[best]) - x)) best = l;
+      if (canvasId === "plume" && S.hoverLead !== best) { S.hoverLead = best; drawPlume(); }
+      showTip($(tipId), html(best), x, e.clientY - rect.top, rect);
+    });
+    canvas.addEventListener("pointerleave", () => {
+      $(tipId).hidden = true;
+      if (canvasId === "plume") { S.hoverLead = null; drawPlume(); }
+    });
+    canvas.addEventListener("click", (e) => {
+      const g = getGeom();
+      if (!g) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      let best = 0;
+      for (let l = 0; l < L; l++) if (Math.abs(g.X(META.lead_hours[l]) - x) < Math.abs(g.X(META.lead_hours[best]) - x)) best = l;
+      setLead(best);
+    });
+  }
+
+  function downloadPng() {
+    const v = DATA[S.v];
+    const scale = 2;
+    const mapW = mapCanvas.width / view.dpr, mapH = mapCanvas.height / view.dpr;
+    const cbar = $("cbar");
+    const cbW = cbar.width / (cbar.width / cbar.getBoundingClientRect().width), cbH = cbar.height / (cbar.height / cbar.getBoundingClientRect().height);
+    const pad = 24, head = 62, foot = cbH + 30;
+    const out = document.createElement("canvas");
+    out.width = (mapW + 2 * pad) * scale;
+    out.height = (mapH + head + foot + pad) * scale;
+    const ctx = out.getContext("2d");
+    ctx.scale(scale, scale);
+    ctx.fillStyle = css("--card");
+    ctx.fillRect(0, 0, mapW + 2 * pad, mapH + head + foot + pad);
+    ctx.fillStyle = css("--ink");
+    ctx.font = "600 17px " + css("--font");
+    ctx.textBaseline = "top";
+    ctx.fillText(v.label + " · " + VIEW_TITLES[S.view] + (S.view === "miembro" ? " " + S.member : ""), pad, pad - 4);
+    ctx.fillStyle = css("--ink-2");
+    ctx.font = "13px " + css("--font");
+    ctx.fillText("Inicio " + fmtDate(initDate, dateFmt) + " · válido " + fmtDate(validDate(S.lead), shortFmt) + " (" + leadText(S.lead) + ") · " + META.title, pad, pad + 20);
+    ctx.drawImage(mapCanvas, pad, head, mapW, mapH);
+    ctx.fillStyle = css("--ink-2");
+    ctx.fillText($("units").textContent, pad, head + mapH + 14);
+    ctx.drawImage(cbar, pad + 80, head + mapH + 10, cbW, cbH);
+    out.toBlob((blob) => {
+      if (!blob) return;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "pronostico_" + v.name + "_" + S.view + "_" + META.lead_hours[S.lead] + "h.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }, "image/png");
+  }
+
+  function applyTheme(theme) {
+    if (theme) document.documentElement.dataset.theme = theme;
+    else delete document.documentElement.dataset.theme;
+    texKey = "";
+    render();
+  }
+
+  function setupControls() {
+    const varSel = $("var");
+    DATA.forEach((v, i) => { const o = document.createElement("option"); o.value = i; o.textContent = v.label; varSel.appendChild(o); });
+    varSel.addEventListener("change", () => setVariable(Number(varSel.value)));
+    const views = $("view");
+    for (const spec of VIEWS) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.v = spec.id;
+      b.textContent = spec.label;
+      b.addEventListener("click", () => setView(spec.id));
+      views.appendChild(b);
+    }
+    const proj = $("proj");
+    for (const [id, label] of [["mapa", "Mapa"], ["globo", "Globo"]]) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.v = id;
+      b.textContent = label;
+      b.addEventListener("click", () => { S.proj = id; globeCache = null; render(); });
+      proj.appendChild(b);
+    }
+    const member = $("member");
+    member.max = M - 1;
+    member.addEventListener("input", () => { S.member = Number(member.value); render(); });
+    $("mprev").addEventListener("click", () => { S.member = (S.member + M - 1) % M; render(); });
+    $("mnext").addEventListener("click", () => { S.member = (S.member + 1) % M; render(); });
+    $("iso").addEventListener("change", () => { S.iso = $("iso").checked; render(); });
+    const lead = $("lead");
+    lead.max = L - 1;
+    lead.addEventListener("input", () => setLead(Number(lead.value)));
+    $("play").addEventListener("click", () => setPlaying(!S.playing));
+    $("png").addEventListener("click", downloadPng);
+    $("speed").addEventListener("change", () => { S.speed = Number($("speed").value); });
+    const place = $("place");
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "Punto del mapa";
+    blank.hidden = true;
+    place.appendChild(blank);
+    PLACES.forEach(([name], i) => { const o = document.createElement("option"); o.value = i; o.textContent = name; place.appendChild(o); });
+    place.value = "0";
+    place.addEventListener("change", () => {
+      if (place.value === "") return;
+      const [name, lat, lon] = PLACES[Number(place.value)];
+      setPoint(name, lat, lon);
+    });
+    $("theme").addEventListener("click", () => {
+      const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      const next = dark ? "light" : "dark";
+      try { localStorage.setItem("clima-visor-tema", next); } catch (err) { void err; }
+      applyTheme(next);
+    });
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!document.documentElement.dataset.theme) applyTheme(null); });
+    document.addEventListener("keydown", (e) => {
+      const tag = (e.target && e.target.tagName) || "";
+      if (tag === "SELECT" || (tag === "INPUT" && e.target.type !== "range" && e.target.type !== "checkbox")) return;
+      if (e.key === " ") { e.preventDefault(); setPlaying(!S.playing); }
+      else if (e.key === "ArrowRight" && e.target.type !== "range") { e.preventDefault(); setLead(S.lead + 1); }
+      else if (e.key === "ArrowLeft" && e.target.type !== "range") { e.preventDefault(); setLead(S.lead - 1); }
+    });
+    setupMap();
+    setupChart("plume", "ptip", () => plumeGeom, (l) => {
+      const v = DATA[S.v];
+      const d = v.digits;
+      const u = " " + v.units;
+      let html = "<b>" + leadText(l) + '</b> <span class="k">' + fmtDate(validDate(l), shortFmt) + "</span><br>";
+      html += '<span class="k">media</span> ' + fmt(series.mean[l], d) + u + " · " + '<span class="k">P10–P90</span> ' + fmt(series.p10[l], d) + " a " + fmt(series.p90[l], d) + u;
+      const extra = [];
+      if (v.has_truth) extra.push('<span class="k">' + META.truth_label + "</span> " + fmt(series.truth[l], d) + u);
+      if (v.has_threshold) extra.push('<span class="k">P(&gt; p90)</span> ' + fmt(series.prob[l] * 100, 0) + " %");
+      return html + (extra.length ? "<br>" + extra.join(" · ") : "");
+    });
+    setupChart("skill", "stip", () => skillGeom, (l) => {
+      const v = DATA[S.v];
+      const u = " " + v.units;
+      let html = "<b>" + leadText(l) + "</b><br>";
+      if (v.has_truth) html += '<span class="k">RMSE de la media</span> ' + fmt(skill.rmse[l], v.digits + 1) + u + "<br>";
+      html += '<span class="k">dispersión</span> ' + fmt(skill.spread[l], v.digits + 1) + u;
+      if (v.has_truth && skill.rmse[l] > 0) html += '<br><span class="k">dispersión / error</span> ' + fmt(skill.spread[l] / skill.rmse[l], 2);
+      return html;
+    });
+    const ro = new ResizeObserver(() => { globeCache = null; render(); });
+    ro.observe(mapWrap);
+    ro.observe($("plume-box"));
+  }
+
+  async function main() {
+    try {
+      const saved = (() => { try { return localStorage.getItem("clima-visor-tema"); } catch (err) { void err; return null; } })();
+      if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+      $("title").textContent = META.title;
+      $("subtitle").textContent = META.subtitle || M + " miembros · " + L + " plazos";
+      $("init").textContent = fmtDate(initDate, dateFmt);
+      $("credits-data").textContent = META.members + " miembros · grilla " + W + "×" + H + " · costas: Natural Earth";
+      await load();
+      setupControls();
+      drawTicks();
+      const start = DATA.findIndex((v) => v.name === "t2m");
+      $("var").value = String(Math.max(start, 0));
+      setVariable(Math.max(start, 0));
+      $("loading").classList.add("hidden");
+      document.body.dataset.ready = "1";
+    } catch (err) {
+      $("loading-text").textContent = "No se pudo cargar el visor: " + err.message;
+      document.body.dataset.error = String(err.message);
+    }
+  }
+  main();
+})();
+</script>
+</body>
+</html>
