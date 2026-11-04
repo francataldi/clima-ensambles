@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 
 import matplotlib
@@ -7,9 +8,102 @@ import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from cycler import cycler
 from matplotlib.animation import FuncAnimation, PillowWriter
 
+from .metrics import reliability_from_histogram, roc_from_histogram
+
 UNITS = {"z500": ("m²/s²", 1.0), "t850": ("K", 1.0), "t2m": ("K", 1.0), "u10": ("m/s", 1.0), "msl": ("Pa", 1.0)}
+
+SURFACE = "#fcfcfb"
+INK = "#0b0b0b"
+INK_2 = "#52514e"
+MUTED = "#898781"
+GRID = "#e1e0d9"
+AXIS = "#c3c2b7"
+SERIES = ("#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948")
+RAMP = ("#86b6ef", "#3987e5", "#1c5cab", "#0d366b")
+EVENT_REGIONS = ("tropicos", "extratropicos_norte", "extratropicos_sur", "sudamerica")
+
+
+@contextmanager
+def theme():
+    style = {
+        "figure.facecolor": SURFACE,
+        "axes.facecolor": SURFACE,
+        "savefig.facecolor": SURFACE,
+        "axes.edgecolor": AXIS,
+        "axes.labelcolor": INK_2,
+        "axes.titlecolor": INK,
+        "axes.titlesize": 10,
+        "axes.titleweight": "bold",
+        "axes.titlelocation": "left",
+        "axes.labelsize": 9,
+        "axes.grid": True,
+        "axes.axisbelow": True,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+        "axes.prop_cycle": cycler(color=SERIES),
+        "grid.color": GRID,
+        "grid.linewidth": 0.6,
+        "grid.linestyle": "-",
+        "xtick.color": AXIS,
+        "ytick.color": AXIS,
+        "xtick.labelcolor": INK_2,
+        "ytick.labelcolor": INK_2,
+        "xtick.labelsize": 8,
+        "ytick.labelsize": 8,
+        "legend.frameon": False,
+        "legend.fontsize": 8,
+        "legend.labelcolor": INK_2,
+        "lines.linewidth": 1.6,
+        "lines.markersize": 4,
+        "font.size": 9,
+        "figure.titlesize": 12,
+        "figure.titleweight": "bold",
+    }
+    with plt.rc_context(style):
+        yield
+
+
+def figure(rows: int, cols: int, panel: tuple[float, float], header: float = 0.8):
+    width = cols * panel[0]
+    height = rows * panel[1] + header
+    fig, axes = plt.subplots(rows, cols, figsize=(width, height), squeeze=False, layout="constrained")
+    fig.get_layout_engine().set(rect=(0, 0, 1, 1 - header / height), h_pad=0.08, w_pad=0.08)
+    return fig, axes
+
+
+def header(fig, title: str, subtitle: str | None = None, handles: list | None = None, labels: list[str] | None = None) -> None:
+    h = fig.get_figheight()
+    fig.text(0.012, 1 - 0.16 / h, title, ha="left", va="top", fontsize=13, fontweight="bold", color=INK)
+    if subtitle:
+        fig.text(0.012, 1 - 0.44 / h, subtitle, ha="left", va="top", fontsize=9, color=INK_2)
+    if handles:
+        fig.legend(handles, labels, loc="upper left", bbox_to_anchor=(0.006, 1 - 0.62 / h), ncol=len(handles), borderaxespad=0.0)
+
+
+def _leads_to_show(lead_hours: list[int], wanted: tuple[int, ...] = (24, 72, 120)) -> list[int]:
+    chosen = [h for h in wanted if h in lead_hours]
+    if len(chosen) >= 2:
+        return chosen
+    positive = [h for h in lead_hours if h > 0]
+    if len(positive) <= 3:
+        return positive
+    return [positive[i] for i in np.linspace(0, len(positive) - 1, 3).round().astype(int)]
+
+
+def _lead_label(hours: int) -> str:
+    return f"{hours // 24} d" if hours % 24 == 0 else f"{hours} h"
+
+
+def _event_regions(event: dict) -> list[str]:
+    names = [r for r in EVENT_REGIONS if r in event["regions"]]
+    return names or [r for r in event["regions"] if r != "global"] or list(event["regions"])
+
+
+def _array(values) -> np.ndarray:
+    return np.asarray(values, dtype=np.float64)
 
 
 def plot_skill(result: dict, out_dir: str | Path, variables: tuple[str, ...] = ("z500", "t850", "t2m", "u10")) -> Path:
@@ -114,3 +208,139 @@ def plot_point_plume(series: np.ndarray, times: list[str], threshold: float, tit
     fig.savefig(path, dpi=150)
     plt.close(fig)
     return Path(path)
+
+
+def _ramp(n: int) -> list[str]:
+    if n <= 3:
+        return list(RAMP[1 : 1 + n])
+    return [RAMP[i] for i in np.linspace(0, len(RAMP) - 1, n).round().astype(int)]
+
+
+def plot_event_scores(result: dict, out_dir: str | Path) -> Path:
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    events = result["events"]
+    labels = {k: v["label"] for k, v in result.get("regions", {}).items()}
+    days = np.asarray(result["lead_hours"]) / 24.0
+    with theme():
+        fig, axes = figure(2, len(events), (5.4, 3.4), header=1.0)
+        for j, event in enumerate(events.values()):
+            regions = _event_regions(event)
+            for row, key, ref, ylabel in ((0, "bss", 0.0, "BSS contra climatología"), (1, "auc", 0.5, "área bajo la curva ROC")):
+                ax = axes[row, j]
+                ax.axhline(ref, color=AXIS, lw=1.0, zorder=1)
+                if "global" in event["regions"]:
+                    ax.plot(days[1:], _array(event["regions"]["global"][key])[1:], color=MUTED, lw=1.2, label="Global")
+                for i, region in enumerate(regions):
+                    ax.plot(days[1:], _array(event["regions"][region][key])[1:], color=SERIES[i], marker="o", ms=3.5, label=labels.get(region, region))
+                ax.set_ylabel(ylabel)
+                if row == 0:
+                    ax.set_title(event["label"])
+                else:
+                    ax.set_xlabel("plazo (días)")
+                    low = np.nanmin(_array([event["regions"][r]["auc"][1:] for r in regions]))
+                    ax.set_ylim(min(0.45, low - 0.02) if np.isfinite(low) else 0.45, 1.0)
+        handles, names = axes[0, 0].get_legend_handles_labels()
+        subtitle = f"{result['inits']} inicializaciones · {result['ensemble']['members']} miembros · BSS = 1 − Brier / Brier de la climatología"
+        header(fig, "Eventos extremos: skill probabilístico por región", subtitle, handles, names)
+        path = out / "eventos_skill.png"
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+    return path
+
+
+def _probability_axes(ax) -> None:
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_aspect("equal")
+    ax.set_xticks([0, 0.25, 0.5, 0.75, 1], ["0", "", "0.5", "", "1"])
+    ax.set_yticks([0, 0.25, 0.5, 0.75, 1], ["0", "", "0.5", "", "1"])
+
+
+def plot_reliability(result: dict, out_dir: str | Path, leads: list[int] | None = None, groups: int = 11) -> Path:
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    events = result["events"]
+    labels = {k: v["label"] for k, v in result.get("regions", {}).items()}
+    leads = leads or _leads_to_show(result["lead_hours"])
+    colors = _ramp(len(leads))
+    regions = _event_regions(next(iter(events.values())))
+    with theme():
+        fig, axes = figure(len(events), len(regions), (3.2, 3.3), header=1.0)
+        for i, event in enumerate(events.values()):
+            clim = 1.0 - event["quantile"]
+            for j, region in enumerate(regions):
+                ax = axes[i, j]
+                hist = _array(event["regions"][region]["hist"])
+                ax.fill_between([clim, 1], [clim, (1 + clim) / 2], [1, 1], color=SERIES[0], alpha=0.07, lw=0)
+                ax.fill_between([0, clim], [0, 0], [clim / 2, clim], color=SERIES[0], alpha=0.07, lw=0)
+                ax.plot([0, 1], [0, 1], color=AXIS, lw=1.0)
+                ax.plot([0, 1], [clim / 2, (1 + clim) / 2], color=GRID, lw=1.0)
+                ax.axhline(clim, color=GRID, lw=1.0)
+                ax.axvline(clim, color=GRID, lw=1.0)
+                inset = ax.inset_axes((0.06, 0.62, 0.34, 0.3))
+                for k, lead in enumerate(leads):
+                    li = result["lead_hours"].index(lead)
+                    prob, freq, weight = reliability_from_histogram(hist[li], groups)
+                    ok = weight > 0
+                    ax.plot(prob[ok], freq[ok], color=colors[k], marker="o", ms=3.5, label=_lead_label(lead))
+                    share = weight / max(weight.sum(), 1e-12)
+                    inset.step(np.linspace(0, 1, len(share)), np.maximum(share, 1e-4), where="mid", color=colors[k], lw=1.0)
+                inset.set_yscale("log")
+                inset.set_ylim(1e-4, 2)
+                inset.set_xlim(-0.05, 1.05)
+                inset.set_xticks([])
+                inset.set_yticks([])
+                inset.minorticks_off()
+                inset.grid(False)
+                inset.set_facecolor(SURFACE)
+                for side in ("top", "right"):
+                    inset.spines[side].set_visible(True)
+                inset.set_title("nitidez (log)", fontsize=7, color=MUTED, pad=2, loc="center", fontweight="normal")
+                _probability_axes(ax)
+                ax.set_title(labels.get(region, region), fontsize=9)
+                if j == 0:
+                    ax.set_ylabel(f"{event['label']}\nfrecuencia observada")
+                if i == len(events) - 1:
+                    ax.set_xlabel("probabilidad pronosticada")
+        handles, names = axes[0, 0].get_legend_handles_labels()
+        header(fig, "Diagramas de confiabilidad", "diagonal: confiabilidad perfecta · sombreado: aporta skill frente a la climatología (p = 1 − cuantil)", handles, [f"plazo {n}" for n in names])
+        path = out / "confiabilidad.png"
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+    return path
+
+
+def plot_roc(result: dict, out_dir: str | Path, leads: list[int] | None = None) -> Path:
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    events = result["events"]
+    labels = {k: v["label"] for k, v in result.get("regions", {}).items()}
+    leads = leads or _leads_to_show(result["lead_hours"])
+    colors = _ramp(len(leads))
+    regions = _event_regions(next(iter(events.values())))
+    with theme():
+        fig, axes = figure(len(events), len(regions), (3.2, 3.3), header=0.6)
+        for i, event in enumerate(events.values()):
+            for j, region in enumerate(regions):
+                ax = axes[i, j]
+                hist = _array(event["regions"][region]["hist"])
+                auc = _array(event["regions"][region]["auc"])
+                ax.plot([0, 1], [0, 1], color=AXIS, lw=1.0)
+                for k, lead in enumerate(leads):
+                    li = result["lead_hours"].index(lead)
+                    pofd, pod = roc_from_histogram(hist[li])
+                    value = "s/d" if not np.isfinite(auc[li]) else f"{auc[li]:.2f}"
+                    ax.plot(pofd, pod, color=colors[k], marker="o", ms=2.5, label=f"{_lead_label(lead)} · AUC {value}")
+                _probability_axes(ax)
+                ax.set_title(labels.get(region, region), fontsize=9)
+                ax.legend(loc="lower right", fontsize=7, handlelength=1.2)
+                if j == 0:
+                    ax.set_ylabel(f"{event['label']}\ntasa de aciertos")
+                if i == len(events) - 1:
+                    ax.set_xlabel("tasa de falsas alarmas")
+        header(fig, "Curvas ROC", "cada punto es un umbral sobre la fracción de miembros que pronostica el evento")
+        path = out / "roc.png"
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+    return path
