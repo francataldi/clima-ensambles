@@ -24,6 +24,9 @@ dev = ["pytest>=8.0", "ruff>=0.15"]
 [tool.setuptools.packages.find]
 include = ["clima*"]
 
+[tool.setuptools.package-data]
+clima = ["coastlines.json", "viewer.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
