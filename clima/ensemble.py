@@ -1,11 +1,26 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import torch
+import torch.nn as nn
 
 from .models.forecaster import Forecaster, enable_mc_dropout
 from .noise import smooth_noise
+
+STRATEGIES = {
+    "ci": {"model_noise": False, "mc_dropout": False},
+    "ruido": {"ic_scale": 0.0, "model_noise": True, "mc_dropout": False},
+    "ci+ruido": {"model_noise": True, "mc_dropout": False},
+    "mc_dropout": {"ic_scale": 0.0, "model_noise": False, "mc_dropout": True},
+}
+
+STRATEGY_LABELS = {
+    "ci": "solo condiciones iniciales",
+    "ruido": "solo ruido del modelo",
+    "ci+ruido": "condiciones iniciales + ruido",
+    "mc_dropout": "MC dropout",
+}
 
 
 @dataclass(frozen=True)
@@ -15,6 +30,25 @@ class EnsembleConfig:
     length_scale: float = 6.0
     mc_dropout: bool = False
     batch: int = 25
+    model_noise: bool = True
+
+
+def strategy_config(name: str, base: EnsembleConfig) -> EnsembleConfig:
+    if name not in STRATEGIES:
+        raise ValueError(f"estrategia desconocida {name}: opciones {', '.join(STRATEGIES)}")
+    return replace(base, **STRATEGIES[name])
+
+
+def has_dropout(model: nn.Module) -> bool:
+    return any(isinstance(m, nn.Dropout) and m.p > 0 for m in model.modules())
+
+
+def strategy_available(name: str, models: list[Forecaster]) -> str | None:
+    if name in ("ruido", "ci+ruido") and not all(m.stochastic for m in models):
+        return "el modelo no tiene canales de ruido (noise_channels = 0)"
+    if name == "mc_dropout" and not all(has_dropout(m) for m in models):
+        return "el modelo no tiene dropout"
+    return None
 
 
 def perturb(model: Forecaster, state: torch.Tensor, cfg: EnsembleConfig, generator: torch.Generator, keep_control: bool) -> torch.Tensor:
@@ -67,7 +101,7 @@ def run_ensemble(
                 if cfg.mc_dropout:
                     enable_mc_dropout(model)
                 idx = torch.tensor(sel, device=device)
-                result[idx] = model.rollout(x0[idx], f[idx], generator=generator, sample=True, control_first=control)
+                result[idx] = model.rollout(x0[idx], f[idx], generator=generator, sample=cfg.model_noise, control_first=control)
                 model.eval()
             outs.append(result)
     return torch.cat(outs, dim=0)
