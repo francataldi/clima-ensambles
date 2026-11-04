@@ -1,13 +1,10 @@
 import copy
 
 import numpy as np
-import pytest
 import torch
 
 from clima.data.convert import convert
 from clima.data.dataset import N_DYNAMIC, ForecastDataset, dynamic_forcings
-from clima.data.stats import compute_stats
-from clima.data.store import Era5Store
 from clima.data.synthetic import make_synthetic
 from clima.ensemble import EnsembleConfig, run_ensemble, smooth_noise
 from clima.metrics import acc, bilinear, crps_ensemble, ensemble_spread, rmse
@@ -17,16 +14,6 @@ from clima.solar import SOLAR_CONSTANT, time_features, toa_insolation
 from clima.train import TrainConfig, train
 
 TINY = AFNOConfig(dim=16, depth=1, num_blocks=2, patch=2, dropout=0.1)
-
-
-@pytest.fixture(scope="module")
-def store(tmp_path_factory):
-    root = tmp_path_factory.mktemp("era5")
-    ds = make_synthetic("2018-01-01", "2018-03-31T18", seed=1)
-    convert(ds, root, 2018, 2018, verbose=False)
-    s = Era5Store(root)
-    compute_stats(s, "2018-01-01", "2018-02-28T18", verbose=False)
-    return s
 
 
 def test_insolation_is_physical():
