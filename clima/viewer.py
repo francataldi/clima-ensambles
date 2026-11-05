@@ -4,6 +4,7 @@ import base64
 import gzip
 import json
 from dataclasses import dataclass
+from html import escape as html_escape
 from pathlib import Path
 
 import numpy as np
@@ -179,6 +180,7 @@ def build_viewer(
     subtitle: str = "",
     truth_label: str = "ERA5",
     compress: bool = True,
+    extra: dict | None = None,
 ) -> str:
     members = np.asarray(members)
     if members.ndim != 5:
@@ -216,11 +218,24 @@ def build_viewer(
         "gzip": compress,
         "raw_bytes": raw,
         "coast": load_coastlines(),
+        **{k: v for k, v in (extra or {}).items() if v is not None},
     }
+    return render_viewer(meta, payload)
+
+
+def render_viewer(meta: dict, payload: bytes) -> str:
     template = TEMPLATE.read_text(encoding="utf-8")
     meta_json = json.dumps(meta, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    html = template.replace("__TITLE__", title).replace("__META__", meta_json)
+    html = template.replace("__TITLE__", html_escape(meta.get("title", ""))).replace("__META__", meta_json)
     return html.replace("__PAYLOAD__", base64.b64encode(payload).decode("ascii"))
+
+
+def rebuild_viewer(html: str, **updates) -> str:
+    meta, payload = read_viewer(html)
+    meta.update({k: v for k, v in updates.items() if v is not None})
+    if meta.get("gzip"):
+        payload = gzip.compress(payload, compresslevel=9, mtime=0)
+    return render_viewer(meta, payload)
 
 
 def read_viewer(html: str) -> tuple[dict, bytes]:
@@ -287,6 +302,7 @@ def forecast_viewer(
     truth_label: str = "ERA5",
     compress: bool = True,
     verbose: bool = True,
+    extra: dict | None = None,
 ) -> str:
     import torch
 
@@ -316,4 +332,5 @@ def forecast_viewer(
         subtitle,
         truth_label,
         compress,
+        extra,
     )

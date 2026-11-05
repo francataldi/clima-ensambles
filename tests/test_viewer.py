@@ -12,7 +12,7 @@ from clima.ensemble import EnsembleConfig
 from clima.events import derived_field
 from clima.models.afno import AFNOConfig
 from clima.models.forecaster import Forecaster, save_forecaster
-from clima.viewer import MISSING, TEMPLATE, VARIABLES, build_viewer, decode_variable, dequantize_u16, forecast_viewer, quantize_u16, read_viewer
+from clima.viewer import MISSING, TEMPLATE, VARIABLES, build_viewer, decode_variable, dequantize_u16, forecast_viewer, quantize_u16, read_viewer, rebuild_viewer
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -117,6 +117,29 @@ def test_forecast_viewer_contents(store, viewer_html):
     assert np.abs(t2m["truth"][0] - era5).max() < 0.01
     assert np.abs(t2m["members"][0, 0] - era5).max() < 0.05
     assert t2m["members"][:, -1].std(axis=0).mean() > 0
+
+
+def test_rebuild_keeps_data_and_adds_presentation(viewer_html):
+    meta, payload = read_viewer(viewer_html)
+    rebuilt = rebuild_viewer(viewer_html, repo="https://github.com/usuario/repo", model_text="texto del modelo")
+    new_meta, new_payload = read_viewer(rebuilt)
+    assert new_payload == payload
+    assert new_meta["repo"] == "https://github.com/usuario/repo"
+    assert new_meta["model_text"] == "texto del modelo"
+    assert {k: v for k, v in new_meta.items() if k not in ("repo", "model_text")} == meta
+    assert 'id="intro"' in rebuilt and 'id="repo"' in rebuilt
+
+
+def test_viewer_script_rebuild(viewer_html, tmp_path):
+    source = tmp_path / "viejo.html"
+    source.write_text(viewer_html, encoding="utf-8")
+    out = tmp_path / "docs" / "index.html"
+    script = Path(__file__).resolve().parents[1] / "scripts" / "viewer.py"
+    proc = subprocess.run([sys.executable, str(script), "--rebuild", str(source), "--out", str(out)], capture_output=True, text=True, timeout=300)
+    assert proc.returncode == 0, proc.stderr
+    meta, _ = read_viewer(out.read_text(encoding="utf-8"))
+    assert meta["repo"].startswith("https://github.com/")
+    assert meta["model_text"]
 
 
 def test_viewer_script_end_to_end(store, tmp_path):
