@@ -224,6 +224,22 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .loading.hidden { display: none; }
 .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--grid); border-top-color: var(--accent); animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.intro { position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 18px 28px; padding: 18px 56px 18px 20px; }
+.intro[hidden] { display: none; }
+.intro h2 { margin: 0 0 6px; font-size: 16.5px; letter-spacing: -0.01em; font-weight: 650; }
+.intro p { margin: 0; color: var(--ink-2); font-size: 13.5px; line-height: 1.55; }
+.intro p + p { margin-top: 8px; }
+.intro a { color: var(--accent); text-decoration: none; font-weight: 550; }
+.intro a:hover { text-decoration: underline; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; align-content: center; }
+.steps li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 13.5px; color: var(--ink-2); line-height: 1.45; }
+.steps b { color: var(--ink); font-weight: 600; }
+.steps .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 650; font-size: 13px; }
+.intro-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; }
+.help-btn { font-size: 15px; font-weight: 650; }
+.help-btn[hidden] { display: none; }
+.repo-link { text-decoration: none; }
+.repo-link[hidden] { display: none; }
 @media (max-width: 1120px) {
   .main { grid-template-columns: minmax(0, 1fr); }
   .side { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
@@ -242,6 +258,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   .field { min-width: 0; max-width: 100%; }
   .side { grid-template-columns: minmax(0, 1fr); }
   .hint { display: none; }
+  .intro { grid-template-columns: minmax(0, 1fr); padding: 16px 48px 16px 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .spinner { animation-duration: 2s; }
@@ -257,12 +274,32 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     </div>
     <div class="top-actions">
       <div class="chip"><span class="dot"></span><span>Inicio <strong id="init"></strong></span></div>
+      <button class="icon-btn help-btn" id="help" type="button" aria-label="Qué es esto y cómo se usa" title="Qué es esto" hidden>?</button>
+      <a class="icon-btn repo-link" id="repo" href="#" target="_blank" rel="noopener" aria-label="Ver el código en GitHub" title="Código en GitHub" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.11 3.06.74.81 1.19 1.84 1.19 3.1 0 4.43-2.7 5.4-5.27 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+      </a>
       <button class="icon-btn" id="theme" type="button" aria-label="Cambiar entre tema claro y oscuro" title="Tema claro u oscuro">
         <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/></svg>
       </button>
     </div>
   </header>
+
+  <section class="card intro" id="intro" aria-label="Qué es esto y cómo se usa">
+    <div>
+      <h2>Un pronóstico del clima de todo el planeta, hecho por una red neuronal</h2>
+      <p id="intro-model">Una red neuronal aprendió de décadas de datos reales de la atmósfera cómo cambia el clima cada 6 horas, y con eso pronostica los próximos días encadenando pasos.</p>
+      <p>Como la atmósfera es caótica, un solo pronóstico no alcanza: el modelo corre <b id="intro-members">varias versiones</b> que arrancan casi iguales. Donde coinciden, el pronóstico es confiable; donde se separan, el modelo te está diciendo que no sabe.</p>
+    </div>
+    <ol class="steps">
+      <li><span class="n">1</span><span><b>Dale play</b> abajo del mapa y mirá cómo avanza el pronóstico.</span></li>
+      <li><span class="n">2</span><span><b>Tocá cualquier lugar del mapa.</b> En la pluma aparecen todos los futuros posibles para ese punto y, en negro, lo que pasó de verdad.</span></li>
+      <li><span class="n">3</span><span><b>Cambiá la vista</b> a <b>Dispersión</b> para ver dónde duda el modelo, o a <b>Error</b> para ver dónde se equivocó. Con <b>Globo</b> lo podés girar.</span></li>
+    </ol>
+    <button class="icon-btn intro-close" id="intro-close" type="button" aria-label="Cerrar la explicación" title="Cerrar">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </section>
 
   <section class="card toolbar" aria-label="Controles del mapa">
     <label class="field"><span>Variable</span><select id="var"></select></label>
@@ -360,12 +397,12 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   for (let i = 0; i < H; i++) { AREA[i] = Math.cos(LAT[i] * RAD); areaSum += AREA[i] * W; }
 
   const VIEWS = [
-    { id: "miembro", label: "Miembro" },
-    { id: "media", label: "Media" },
-    { id: "dispersion", label: "Dispersión" },
-    { id: "verdad", label: META.truth_label, needs: "has_truth" },
-    { id: "error", label: "Error", needs: "has_truth" },
-    { id: "prob", label: "P > p90", needs: "has_threshold" },
+    { id: "miembro", label: "Miembro", hint: "Un solo pronóstico del ensamble: movete entre miembros para ver cómo cambian" },
+    { id: "media", label: "Media", hint: "El promedio de todos los miembros: la mejor estimación del ensamble" },
+    { id: "dispersion", label: "Dispersión", hint: "Cuánto difieren los miembros entre sí: donde es alta, el modelo duda" },
+    { id: "verdad", label: META.truth_label, needs: "has_truth", hint: "Lo que pasó de verdad según el reanálisis " + META.truth_label },
+    { id: "error", label: "Error", needs: "has_truth", hint: "Media del ensamble menos lo que pasó: rojo es que pronosticó de más, azul de menos" },
+    { id: "prob", label: "P > p90", needs: "has_threshold", hint: "Probabilidad de un valor extremo: superar el percentil 90 de la climatología de esa fecha" },
   ];
   const VIEW_TITLES = {
     miembro: "miembro",
@@ -1537,6 +1574,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       b.type = "button";
       b.dataset.v = spec.id;
       b.textContent = spec.label;
+      if (spec.hint) b.title = spec.hint;
       b.addEventListener("click", () => setView(spec.id));
       views.appendChild(b);
     }
@@ -1574,6 +1612,14 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       const [name, lat, lon] = PLACES[Number(place.value)];
       setPoint(name, lat, lon);
     });
+    const intro = $("intro");
+    const setIntro = (open) => {
+      intro.hidden = !open;
+      $("help").hidden = open;
+      try { localStorage.setItem("clima-visor-intro", open ? "1" : "0"); } catch { document.documentElement.dataset.stored = "no"; }
+    };
+    $("intro-close").addEventListener("click", () => setIntro(false));
+    $("help").addEventListener("click", () => { setIntro(true); intro.scrollIntoView({ behavior: "smooth", block: "nearest" }); });
     $("theme").addEventListener("click", () => {
       const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
       const next = dark ? "light" : "dark";
@@ -1622,6 +1668,11 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       $("subtitle").textContent = META.subtitle || M + " miembros · " + L + " plazos";
       $("init").textContent = fmtDate(initDate, dateFmt);
       $("credits-data").textContent = META.members + " miembros · grilla " + W + "×" + H + " · costas: Natural Earth";
+      $("intro-members").textContent = META.members + " versiones";
+      if (META.model_text) $("intro-model").textContent = META.model_text;
+      if (META.repo) { $("repo").href = META.repo; $("repo").hidden = false; }
+      const introSaved = (() => { try { return localStorage.getItem("clima-visor-intro"); } catch { return null; } })();
+      if (introSaved === "0") { $("intro").hidden = true; $("help").hidden = false; }
       await load();
       setupControls();
       drawTicks();
