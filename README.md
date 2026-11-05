@@ -32,6 +32,27 @@ Todo entrenado en una sola RTX 3060.
 | **Por qué ensambles** | La atmósfera es caótica y un error mínimo hoy es una tormenta mal ubicada en 5 días. En vez de un número, el modelo da una distribución. |
 | **Cómo lo mido** | Igual que WeatherBench 2: RMSE y ACC ponderados por latitud, CRPS, dispersión contra error, histogramas de rangos, Brier y ROC para eventos extremos. |
 
+<details>
+<summary><b>Glosario para no especialistas</b></summary>
+
+| Término | Qué quiere decir |
+|---|---|
+| **Ensamble** | Correr el pronóstico muchas veces con arranques apenas distintos. Cada corrida es un **miembro** o **escenario**. |
+| **Media del ensamble** | El promedio de todos los escenarios: el pronóstico más probable. |
+| **Dispersión** | Cuánto se diferencian los escenarios entre sí. Es la duda del pronóstico. |
+| **ERA5** | La mejor reconstrucción que existe del clima real, hora por hora, desde 1940. Sirve para entrenar y para comparar con "lo que pasó". |
+| **Persistencia** | El pronóstico más tonto posible: "mañana va a estar igual que hoy". Hay que ganarle. |
+| **Climatología** | Otro pronóstico de referencia: el promedio histórico para esa fecha y hora. |
+| **RMSE** | El error típico del pronóstico, en las unidades de la variable. Cuanto más bajo, mejor. |
+| **ACC** | Qué tan bien acierta el patrón de lo que se sale de lo normal. 1 es perfecto; debajo de 0,6 ya no sirve. |
+| **CRPS** | El error de un pronóstico probabilístico: premia acertar y también saber cuánto dudar. |
+| **z500** | La altura a la que la presión baja a 500 hPa, a unos 5,5 km. Sus ondas marcan dónde van los frentes y las tormentas. |
+| **t850** y **t2m** | Temperatura a unos 1,5 km de altura y a 2 metros del suelo. |
+| **Percentil 90 (p90)** | El valor que se supera solo 1 de cada 10 veces en esa época del año: lo "fuera de lo común". |
+| **Brier** y **ROC** | Medidas de qué tan bien se pronostican eventos de sí o no, como "va a hacer calor extremo". |
+
+</details>
+
 ## Resultados en 2020
 
 181 pronósticos de 10 días, uno cada 2 días de 2020, con 50 miembros cada uno.
