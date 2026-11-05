@@ -35,13 +35,13 @@ class ViewVariable:
 
 
 VARIABLES = {
-    "t2m": ViewVariable("t2m", "Temperatura a 2 m", "°C", offset=-KELVIN, cmap="RdBu_r", center=0.0, contour=5.0),
-    "ws10": ViewVariable("ws10", "Viento a 10 m", "m/s", cmap="viridis", contour=4.0),
-    "msl": ViewVariable("msl", "Presión a nivel del mar", "hPa", scale=0.01, cmap="PuOr_r", center=1013.0, contour=4.0, contours=True),
-    "z500": ViewVariable("z500", "Altura de 500 hPa", "dam", scale=1 / 98.0665, cmap="Spectral_r", contour=6.0, contours=True, digits=0),
-    "t850": ViewVariable("t850", "Temperatura en 850 hPa", "°C", offset=-KELVIN, cmap="RdBu_r", center=0.0, contour=5.0),
-    "ws250": ViewVariable("ws250", "Corriente en chorro (250 hPa)", "m/s", cmap="magma", contour=15.0, digits=0),
-    "q850": ViewVariable("q850", "Humedad específica en 850 hPa", "g/kg", scale=1000.0, cmap="YlGnBu", contour=2.0),
+    "t2m": ViewVariable("t2m", "Temperatura", "°C", offset=-KELVIN, cmap="RdBu_r", center=0.0, contour=5.0),
+    "ws10": ViewVariable("ws10", "Viento", "m/s", cmap="viridis", contour=4.0),
+    "msl": ViewVariable("msl", "Presión", "hPa", scale=0.01, cmap="PuOr_r", center=1013.0, contour=4.0, contours=True),
+    "z500": ViewVariable("z500", "Ondas de la atmósfera (500 hPa)", "dam", scale=1 / 98.0665, cmap="Spectral_r", contour=6.0, contours=True, digits=0),
+    "t850": ViewVariable("t850", "Temperatura a 1,5 km de altura", "°C", offset=-KELVIN, cmap="RdBu_r", center=0.0, contour=5.0),
+    "ws250": ViewVariable("ws250", "Corriente en chorro (10 km de altura)", "m/s", cmap="magma", contour=15.0, digits=0),
+    "q850": ViewVariable("q850", "Humedad a 1,5 km de altura", "g/kg", scale=1000.0, cmap="YlGnBu", contour=2.0),
 }
 
 DEFAULT_VARIABLES = ("t2m", "ws10", "msl", "z500", "t850", "ws250", "q850")
@@ -233,6 +233,10 @@ def render_viewer(meta: dict, payload: bytes) -> str:
 def rebuild_viewer(html: str, **updates) -> str:
     meta, payload = read_viewer(html)
     meta.update({k: v for k, v in updates.items() if v is not None})
+    for info in meta.get("variables", []):
+        spec = VARIABLES.get(info.get("name"))
+        if spec is not None:
+            info["label"] = spec.label
     if meta.get("gzip"):
         payload = gzip.compress(payload, compresslevel=9, mtime=0)
     return render_viewer(meta, payload)

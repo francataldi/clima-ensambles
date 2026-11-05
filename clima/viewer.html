@@ -224,6 +224,10 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .loading.hidden { display: none; }
 .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--grid); border-top-color: var(--accent); animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.var-hint { font-size: 12px; color: var(--ink-2); line-height: 1.35; max-width: 280px; }
+.var-hint:empty { display: none; }
+.panel-note { margin: -2px 0 8px; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+.panel-note[hidden] { display: none; }
 .intro { position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 18px 28px; padding: 18px 56px 18px 20px; }
 .intro[hidden] { display: none; }
 .intro h2 { margin: 0 0 6px; font-size: 16.5px; letter-spacing: -0.01em; font-weight: 650; }
@@ -293,8 +297,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     </div>
     <ol class="steps">
       <li><span class="n">1</span><span><b>Dale play</b> abajo del mapa y mirá cómo avanza el pronóstico.</span></li>
-      <li><span class="n">2</span><span><b>Tocá cualquier lugar del mapa.</b> En la pluma aparecen todos los futuros posibles para ese punto y, en negro, lo que pasó de verdad.</span></li>
-      <li><span class="n">3</span><span><b>Cambiá la vista</b> a <b>Dispersión</b> para ver dónde duda el modelo, o a <b>Error</b> para ver dónde se equivocó. Con <b>Globo</b> lo podés girar.</span></li>
+      <li><span class="n">2</span><span><b>Tocá cualquier lugar del mapa.</b> Al costado aparecen los futuros posibles para ese lugar y, en negro, lo que pasó de verdad.</span></li>
+      <li><span class="n">3</span><span><b>Cambiá lo que ves:</b> con <b>Incertidumbre</b> ves dónde duda la IA y con <b>Cuánto erró</b>, dónde se equivocó. Con <b>Globo</b> podés girar el planeta.</span></li>
     </ol>
     <button class="icon-btn intro-close" id="intro-close" type="button" aria-label="Cerrar la explicación" title="Cerrar">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -302,18 +306,18 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   </section>
 
   <section class="card toolbar" aria-label="Controles del mapa">
-    <label class="field"><span>Variable</span><select id="var"></select></label>
-    <div class="field"><span>Vista</span><div class="seg" id="view" role="group" aria-label="Vista"></div></div>
-    <div class="field" id="member-field"><span>Miembro</span>
+    <label class="field"><span>Qué mirar</span><select id="var"></select><small class="var-hint" id="var-hint"></small></label>
+    <div class="field"><span>Mostrar</span><div class="seg" id="view" role="group" aria-label="Qué mostrar"></div></div>
+    <div class="field" id="member-field"><span>Escenario</span>
       <div class="member">
-        <button class="mini" id="mprev" type="button" aria-label="Miembro anterior">‹</button>
-        <input type="range" id="member" min="0" max="0" step="1" value="0" aria-label="Miembro del ensamble">
-        <button class="mini" id="mnext" type="button" aria-label="Miembro siguiente">›</button>
+        <button class="mini" id="mprev" type="button" aria-label="Escenario anterior">‹</button>
+        <input type="range" id="member" min="0" max="0" step="1" value="0" aria-label="Escenario">
+        <button class="mini" id="mnext" type="button" aria-label="Escenario siguiente">›</button>
         <output id="mlabel"></output>
       </div>
     </div>
-    <div class="field"><span>Proyección</span><div class="seg" id="proj" role="group" aria-label="Proyección"></div></div>
-    <div class="field"><span>Capas</span><label class="switch"><input type="checkbox" id="iso"><span class="track"></span>Isolíneas</label></div>
+    <div class="field"><span>Forma</span><div class="seg" id="proj" role="group" aria-label="Proyección"></div></div>
+    <div class="field"><span>Capas</span><label class="switch"><input type="checkbox" id="iso"><span class="track"></span>Curvas de nivel</label></div>
   </section>
 
   <main class="main">
@@ -356,15 +360,16 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     </section>
 
     <aside class="side">
-      <section class="card panel" aria-label="Pluma del ensamble en un punto">
-        <div class="panel-head"><h2>Pluma en el punto</h2><select id="place" aria-label="Lugar"></select></div>
+      <section class="card panel" aria-label="Los futuros posibles en un lugar">
+        <div class="panel-head"><h2>Futuros posibles acá</h2><select id="place" aria-label="Lugar"></select></div>
         <div class="point" id="point"></div>
         <div class="legend" id="plume-legend"></div>
         <div class="chart" id="plume-box"><canvas id="plume"></canvas><div class="tip" id="ptip" hidden></div></div>
         <dl class="readout" id="readout"></dl>
       </section>
-      <section class="card panel" aria-label="Error global contra dispersión">
-        <div class="panel-head"><h2 id="skill-title">Error global vs dispersión</h2></div>
+      <section class="card panel" aria-label="Si la IA sabe cuánto no sabe">
+        <div class="panel-head"><h2 id="skill-title">¿La IA sabe cuánto no sabe?</h2></div>
+        <p class="panel-note" id="skill-note">Si las dos líneas van juntas, la duda que muestra el pronóstico es honesta: cuando dice que no está segura, de verdad se equivoca más.</p>
         <div class="legend" id="skill-legend"></div>
         <div class="chart small" id="skill-box"><canvas id="skill"></canvas><div class="tip" id="stip" hidden></div></div>
       </section>
@@ -397,20 +402,29 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   for (let i = 0; i < H; i++) { AREA[i] = Math.cos(LAT[i] * RAD); areaSum += AREA[i] * W; }
 
   const VIEWS = [
-    { id: "miembro", label: "Miembro", hint: "Un solo pronóstico del ensamble: movete entre miembros para ver cómo cambian" },
-    { id: "media", label: "Media", hint: "El promedio de todos los miembros: la mejor estimación del ensamble" },
-    { id: "dispersion", label: "Dispersión", hint: "Cuánto difieren los miembros entre sí: donde es alta, el modelo duda" },
-    { id: "verdad", label: META.truth_label, needs: "has_truth", hint: "Lo que pasó de verdad según el reanálisis " + META.truth_label },
-    { id: "error", label: "Error", needs: "has_truth", hint: "Media del ensamble menos lo que pasó: rojo es que pronosticó de más, azul de menos" },
-    { id: "prob", label: "P > p90", needs: "has_threshold", hint: "Probabilidad de un valor extremo: superar el percentil 90 de la climatología de esa fecha" },
+    { id: "miembro", label: "Un escenario", hint: "Uno solo de los futuros posibles. Pasá de uno a otro para ver cuánto cambian" },
+    { id: "media", label: "Promedio", hint: "El promedio de todos los escenarios: el pronóstico más probable" },
+    { id: "dispersion", label: "Incertidumbre", hint: "Cuánto se diferencian los escenarios entre sí. Donde es alta, la IA no está segura" },
+    { id: "verdad", label: "Lo que pasó", needs: "has_truth", hint: "Lo que pasó de verdad, según los datos reales de " + META.truth_label },
+    { id: "error", label: "Cuánto erró", needs: "has_truth", hint: "Pronóstico promedio menos lo que pasó: rojo es que pronosticó de más y azul, de menos" },
+    { id: "prob", label: "Extremos", needs: "has_threshold", hint: "Chance de un valor fuera de lo común: más alto que lo que se ve solo 1 de cada 10 veces en esa época del año" },
   ];
   const VIEW_TITLES = {
-    miembro: "miembro",
-    media: "media del ensamble",
-    dispersion: "dispersión del ensamble (desvío)",
-    verdad: META.truth_label,
-    error: "error de la media (media − " + META.truth_label + ")",
-    prob: "probabilidad de superar el p90 climatológico",
+    miembro: "escenario",
+    media: "promedio de los escenarios",
+    dispersion: "incertidumbre (cuánto difieren los escenarios)",
+    verdad: "lo que pasó de verdad",
+    error: "cuánto erró el promedio (rojo: de más, azul: de menos)",
+    prob: "chance de un valor fuera de lo común",
+  };
+  const VAR_HINTS = {
+    t2m: "La temperatura del aire a 2 metros del suelo: la que sentís en la calle.",
+    ws10: "La velocidad del viento cerca del suelo.",
+    msl: "La presión del aire. Las zonas de presión baja traen nubes y lluvia; las de presión alta, buen tiempo.",
+    z500: "La altura a la que la presión baja a 500 hPa, a unos 5,5 km. Sus ondas marcan por dónde avanzan los frentes y las tormentas.",
+    t850: "La temperatura a unos 1,5 km de altura: muestra las masas de aire frío y caliente que traen los frentes.",
+    ws250: "El viento a unos 10 km de altura, donde vuelan los aviones. Es el que empuja a las tormentas.",
+    q850: "Cuánta humedad hay en el aire a 1,5 km de altura: el combustible de las lluvias.",
   };
   const PLACES = [
     ["Buenos Aires", -34.6, -58.4], ["Córdoba", -31.4, -64.2], ["Mendoza", -32.9, -68.8], ["Ushuaia", -54.8, -68.3],
@@ -456,7 +470,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   const fmtDate = (d, f) => f.format(d).replace(/,/g, "").replace(/\s+/g, " ") + " UTC";
   function leadText(l) {
     const h = META.lead_hours[l];
-    if (h === 0) return "análisis";
+    if (h === 0) return "inicio";
     if (h % 24 === 0) return "+" + h / 24 + " d";
     return "+" + h + " h";
   }
@@ -1055,7 +1069,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       const half = ctx.measureText(label).width / 2;
       ctx.fillText(label, clamp(x, half + 1, box.w - half - 1), top + bh + 6);
     }
-    $("units").textContent = S.view === "prob" ? "probabilidad (%)" : S.view === "dispersion" ? "desvío en " + v.units : v.units;
+    $("units").textContent = S.view === "prob" ? "chance (%)" : S.view === "dispersion" ? "± " + v.units : v.units;
   }
 
   function bilinearWeights(lat, lon) {
@@ -1256,12 +1270,12 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     const v = DATA[S.v];
     const d = v.digits;
     const parts = [
-      stat("Media del ensamble · " + leadText(l), fmt(series.mean[l], d), v.units),
-      stat("Rango P10–P90", fmt(series.p10[l], d) + " a " + fmt(series.p90[l], d), v.units),
+      stat("Pronóstico promedio · " + leadText(l), fmt(series.mean[l], d), v.units),
+      stat('<span title="8 de cada 10 escenarios caen en este rango">Rango probable</span>', fmt(series.p10[l], d) + " a " + fmt(series.p90[l], d), v.units),
     ];
-    if (v.has_truth) parts.push(stat(META.truth_label, fmt(series.truth[l], d), Number.isFinite(series.truth[l]) ? v.units : ""));
-    parts.push(stat("Dispersión (desvío)", fmt(series.spread[l], d + 1), v.units));
-    if (v.has_threshold) parts.push(stat("Prob. de superar el p90 (" + fmt(series.thr[l], d) + ")", fmt(series.prob[l] * 100, 0) + " %", ""));
+    if (v.has_truth) parts.push(stat("Lo que pasó de verdad", fmt(series.truth[l], d), Number.isFinite(series.truth[l]) ? v.units : ""));
+    parts.push(stat("Incertidumbre", "± " + fmt(series.spread[l], d + 1), v.units));
+    if (v.has_threshold) parts.push(stat('<span title="Más de ' + fmt(series.thr[l], d) + " " + v.units + ', algo que pasa 1 de cada 10 veces en esta época">Chance de pasar lo habitual</span>', fmt(series.prob[l] * 100, 0) + " %", ""));
     $("readout").innerHTML = parts.join("");
   }
 
@@ -1269,13 +1283,13 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     const v = DATA[S.v];
     const accent = css("--accent");
     const items = [
-      '<span><i style="border-color:' + accent + '"></i>media</span>',
-      '<span><i class="band" style="background:' + withAlpha(accent, 0.25) + '"></i>P10–P90</span>',
-      '<span><i class="thin" style="border-color:' + accent + '"></i>miembros</span>',
+      '<span><i style="border-color:' + accent + '"></i>promedio</span>',
+      '<span><i class="band" style="background:' + withAlpha(accent, 0.25) + '"></i>rango probable</span>',
+      '<span><i class="thin" style="border-color:' + accent + '"></i>escenarios</span>',
     ];
-    if (S.view === "miembro") items.push('<span><i style="border-color:' + css("--member") + '"></i>' + (S.member === 0 ? "control" : "miembro " + S.member) + "</span>");
-    if (v.has_truth) items.push('<span><i style="border-color:' + css("--truth") + '"></i>' + META.truth_label + "</span>");
-    if (v.has_threshold) items.push('<span><i class="dash" style="border-color:' + css("--accent-2") + '"></i>p90 clim.</span>');
+    if (S.view === "miembro") items.push('<span><i style="border-color:' + css("--member") + '"></i>' + (S.member === 0 ? "escenario base" : "escenario " + S.member) + "</span>");
+    if (v.has_truth) items.push('<span><i style="border-color:' + css("--truth") + '"></i>lo que pasó</span>');
+    if (v.has_threshold) items.push('<span><i class="dash" style="border-color:' + css("--accent-2") + '"></i>límite de lo habitual</span>');
     $("plume-legend").innerHTML = items.join("");
     $("point").textContent = S.point.name + " · " + fmtCoord(S.point.lat, S.point.lon);
   }
@@ -1327,10 +1341,11 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
     ctx.lineTo(x, box.h - pad.b);
     ctx.stroke();
     const items = [];
-    if (v.has_truth) items.push('<span><i style="border-color:' + css("--accent") + '"></i>RMSE de la media vs ' + META.truth_label + "</span>");
-    items.push('<span><i style="border-color:' + css("--accent-2") + '"></i>dispersión</span>');
+    if (v.has_truth) items.push('<span><i style="border-color:' + css("--accent") + '"></i>cuánto se equivocó de verdad</span>');
+    items.push('<span><i style="border-color:' + css("--accent-2") + '"></i>cuánto dudaba</span>');
     $("skill-legend").innerHTML = items.join("");
-    $("skill-title").textContent = (v.has_truth ? "Error global vs dispersión" : "Dispersión global") + " · " + v.units;
+    $("skill-title").textContent = v.has_truth ? "¿La IA sabe cuánto no sabe?" : "Cuánto duda la IA en todo el planeta";
+    $("skill-note").hidden = !v.has_truth;
   }
 
   function drawTicks() {
@@ -1345,14 +1360,14 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 
   function updateHeader() {
     const v = DATA[S.v];
-    $("map-title").innerHTML = v.label + ' <span>· ' + VIEW_TITLES[S.view] + (S.view === "miembro" ? " " + S.member + (S.member === 0 ? " (control)" : "") : "") + "</span>";
-    $("valid").innerHTML = "Válido <b>" + fmtDate(validDate(S.lead), shortFmt) + "</b> · " + leadText(S.lead);
+    $("map-title").innerHTML = v.label + ' <span>· ' + VIEW_TITLES[S.view] + (S.view === "miembro" ? " " + S.member + (S.member === 0 ? " (base)" : "") : "") + "</span>";
+    $("valid").innerHTML = "Para el <b>" + fmtDate(validDate(S.lead), shortFmt) + "</b> · " + leadText(S.lead);
     $("lead-badge").textContent = leadText(S.lead);
     const lead = $("lead");
     lead.value = S.lead;
     lead.style.setProperty("--fill", (L > 1 ? (S.lead / (L - 1)) * 100 : 0) + "%");
     $("member-field").style.display = S.view === "miembro" ? "" : "none";
-    $("mlabel").textContent = S.member === 0 ? "control" : S.member + " de " + (M - 1);
+    $("mlabel").textContent = S.member === 0 ? "base" : S.member + " de " + (M - 1);
     $("member").value = S.member;
     for (const b of $("view").children) {
       const spec = VIEWS.find((x) => x.id === b.dataset.v);
@@ -1388,6 +1403,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   function setVariable(i) {
     S.v = i;
     const v = DATA[i];
+    $("var-hint").textContent = v.hint || VAR_HINTS[v.name] || "";
     const spec = VIEWS.find((x) => x.id === S.view);
     if (spec.needs && !v[spec.needs]) S.view = "media";
     $("iso").checked = Boolean(v.contours);
@@ -1640,19 +1656,18 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       const d = v.digits;
       const u = " " + v.units;
       let html = "<b>" + leadText(l) + '</b> <span class="k">' + fmtDate(validDate(l), shortFmt) + "</span><br>";
-      html += '<span class="k">media</span> ' + fmt(series.mean[l], d) + u + " · " + '<span class="k">P10–P90</span> ' + fmt(series.p10[l], d) + " a " + fmt(series.p90[l], d) + u;
+      html += '<span class="k">promedio</span> ' + fmt(series.mean[l], d) + u + " · " + '<span class="k">rango probable</span> ' + fmt(series.p10[l], d) + " a " + fmt(series.p90[l], d) + u;
       const extra = [];
-      if (v.has_truth) extra.push('<span class="k">' + META.truth_label + "</span> " + fmt(series.truth[l], d) + u);
-      if (v.has_threshold) extra.push('<span class="k">P(&gt; p90)</span> ' + fmt(series.prob[l] * 100, 0) + " %");
+      if (v.has_truth) extra.push('<span class="k">lo que pasó</span> ' + fmt(series.truth[l], d) + u);
+      if (v.has_threshold) extra.push('<span class="k">chance de extremo</span> ' + fmt(series.prob[l] * 100, 0) + " %");
       return html + (extra.length ? "<br>" + extra.join(" · ") : "");
     });
     setupChart("skill", "stip", () => skillGeom, (l) => {
       const v = DATA[S.v];
       const u = " " + v.units;
       let html = "<b>" + leadText(l) + "</b><br>";
-      if (v.has_truth) html += '<span class="k">RMSE de la media</span> ' + fmt(skill.rmse[l], v.digits + 1) + u + "<br>";
-      html += '<span class="k">dispersión</span> ' + fmt(skill.spread[l], v.digits + 1) + u;
-      if (v.has_truth && skill.rmse[l] > 0) html += '<br><span class="k">dispersión / error</span> ' + fmt(skill.spread[l] / skill.rmse[l], 2);
+      if (v.has_truth) html += '<span class="k">se equivocó en promedio</span> ' + fmt(skill.rmse[l], v.digits + 1) + u + "<br>";
+      html += '<span class="k">dudaba</span> ± ' + fmt(skill.spread[l], v.digits + 1) + u;
       return html;
     });
     const ro = new ResizeObserver(() => { globeCache = null; render(); });
@@ -1667,7 +1682,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
       $("title").textContent = META.title;
       $("subtitle").textContent = META.subtitle || M + " miembros · " + L + " plazos";
       $("init").textContent = fmtDate(initDate, dateFmt);
-      $("credits-data").textContent = META.members + " miembros · grilla " + W + "×" + H + " · costas: Natural Earth";
+      $("credits-data").textContent = META.members + " escenarios · mapa de " + W + "×" + H + " puntos · costas: Natural Earth";
       $("intro-members").textContent = META.members + " versiones";
       if (META.model_text) $("intro-model").textContent = META.model_text;
       if (META.repo) { $("repo").href = META.repo; $("repo").hidden = false; }
