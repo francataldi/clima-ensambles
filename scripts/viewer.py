@@ -7,6 +7,8 @@ from clima.ensemble import STRATEGIES
 from clima.viewer import DEFAULT_VARIABLES, VARIABLES, forecast_viewer, read_viewer, rebuild_viewer
 
 TITLE = "El clima de los próximos 10 días, según una IA"
+DESCRIPTION = "Una red neuronal pronostica el clima de todo el planeta y muestra 20 futuros posibles. Tocá cualquier punto del mapa y compará con lo que pasó de verdad."
+PAGE = "https://francataldi.github.io/clima-ensambles/"
 ABOUT = (
     "Una red AFNO, de la familia de FourCastNet, aprendió de 28 años de datos reales de la atmósfera (ERA5, 1990-2017) "
     "cómo cambia el clima cada 6 horas, y pronostica los próximos días encadenando pasos de a uno."
@@ -31,10 +33,13 @@ def main() -> None:
     parser.add_argument("--no-gzip", action="store_true")
     parser.add_argument("--repo", default="https://github.com/francataldi/clima-ensambles", help="link al repositorio que aparece en el visor")
     parser.add_argument("--about", default=ABOUT, help="texto que explica el modelo en la presentacion del visor")
+    parser.add_argument("--description", default=DESCRIPTION, help="texto de la vista previa cuando se comparte el link")
+    parser.add_argument("--page-url", default=PAGE, help="direccion publica del visor, para la vista previa al compartirlo")
+    parser.add_argument("--image-url", default=PAGE + "img/visor.jpg", help="imagen de la vista previa al compartirlo")
     parser.add_argument("--rebuild", default=None, help="visor ya generado: lo vuelve a armar con la plantilla actual sin correr el modelo")
     parser.add_argument("--out", default="runs/visor/visor.html")
     args = parser.parse_args()
-    extra = {"repo": args.repo or None, "model_text": args.about or None}
+    extra = {"repo": args.repo or None, "model_text": args.about or None, "description": args.description or None, "page_url": args.page_url or None, "image_url": args.image_url or None}
     if args.rebuild:
         source = Path(args.rebuild).read_text(encoding="utf-8")
         meta, _ = read_viewer(source)

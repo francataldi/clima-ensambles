@@ -223,10 +223,19 @@ def build_viewer(
     return render_viewer(meta, payload)
 
 
+def social_head(meta: dict) -> str:
+    title = meta.get("title", "")
+    description = meta.get("description")
+    tags = [("name", "description", description), ("property", "og:type", "website" if meta.get("page_url") else None), ("property", "og:locale", "es_AR" if meta.get("page_url") else None)]
+    tags += [("property", "og:title", title if description else None), ("property", "og:description", description), ("property", "og:url", meta.get("page_url"))]
+    tags += [("property", "og:image", meta.get("image_url")), ("name", "twitter:card", "summary_large_image" if meta.get("image_url") else None)]
+    return "".join(f'<meta {kind}="{key}" content="{html_escape(str(value))}">\n' for kind, key, value in tags if value)
+
+
 def render_viewer(meta: dict, payload: bytes) -> str:
     template = TEMPLATE.read_text(encoding="utf-8")
     meta_json = json.dumps(meta, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    html = template.replace("__TITLE__", html_escape(meta.get("title", ""))).replace("__META__", meta_json)
+    html = template.replace("__TITLE__", html_escape(meta.get("title", ""))).replace("__HEAD__", social_head(meta)).replace("__META__", meta_json)
     return html.replace("__PAYLOAD__", base64.b64encode(payload).decode("ascii"))
 
 
