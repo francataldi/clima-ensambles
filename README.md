@@ -2,22 +2,19 @@
 
 # 🌎 clima-ensambles
 
-**Pronóstico del clima de todo el planeta con una red neuronal, que además dice cuánto confiar en él.**
+**Una red neuronal que pronostica el clima de todo el planeta y, además, avisa cuánto confiar en su pronóstico.**
 
-Una red AFNO, de la familia de FourCastNet, aprendió de 28 años de datos reales cómo cambia la atmósfera cada 6 horas.
-Pronostica 10 días encadenando pasos y corre **50 versiones del futuro** para convertir el pronóstico en probabilidades.
-Todo entrenado en una sola RTX 3060.
-
-[![ci](https://github.com/francataldi/clima-ensambles/actions/workflows/ci.yml/badge.svg)](https://github.com/francataldi/clima-ensambles/actions/workflows/ci.yml)
+[![tests](https://github.com/francataldi/clima-ensambles/actions/workflows/tests.yml/badge.svg)](https://github.com/francataldi/clima-ensambles/actions/workflows/tests.yml)
 ![python](https://img.shields.io/badge/python-3.11%20%7C%203.12-3776ab)
 ![pytorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c)
 ![datos](https://img.shields.io/badge/datos-ERA5%20%C2%B7%20WeatherBench%202-2a78d6)
+![error](https://img.shields.io/badge/a%205%20d%C3%ADas-23%25%20menos%20error%20con%2050%20futuros-1baf7a)
 
-### [▶ Abrir el visor interactivo](https://francataldi.github.io/clima-ensambles/)
+### [▶ Probalo en el navegador](https://francataldi.github.io/clima-ensambles/)
 
-<a href="https://francataldi.github.io/clima-ensambles/"><img src="docs/img/visor.jpg" alt="Visor del pronóstico por ensamble: mapa de la dispersión de la temperatura y pluma de 20 miembros sobre Buenos Aires" width="900"></a>
+<a href="https://francataldi.github.io/clima-ensambles/"><img src="docs/img/visor.jpg" alt="Visor del pronóstico: mapa del mundo con la incertidumbre de la temperatura y, al costado, los 20 futuros posibles para Buenos Aires contra lo que pasó de verdad" width="900"></a>
 
-<sub>El visor corre entero en el navegador, en un solo archivo. Tocá cualquier punto del mapa y ves los 20 futuros posibles contra lo que pasó de verdad.</sub>
+<sub>No hay que instalar nada. Tocá cualquier punto del mapa y ves los futuros posibles para ese lugar, al lado de lo que pasó de verdad.</sub>
 
 </div>
 
@@ -25,148 +22,174 @@ Todo entrenado en una sola RTX 3060.
 
 ## En 30 segundos
 
-| | |
-|---|---|
-| **Qué predice** | 18 variables globales cada 6 h: temperatura, viento, presión, geopotencial y humedad en superficie y en 3 niveles de la atmósfera. |
-| **Con qué aprendió** | ERA5 de 1990 a 2017, en una grilla de 64×32 tomada de WeatherBench 2. Validó en 2018-2019 y se evalúa en **2020, un año que nunca vio**. |
-| **Por qué ensambles** | La atmósfera es caótica y un error mínimo hoy es una tormenta mal ubicada en 5 días. En vez de un número, el modelo da una distribución. |
-| **Cómo lo mido** | Igual que WeatherBench 2: RMSE y ACC ponderados por latitud, CRPS, dispersión contra error, histogramas de rangos, Brier y ROC para eventos extremos. |
+- 🧠 Una red neuronal miró **28 años de clima real** de todo el planeta y aprendió cómo cambia la atmósfera cada 6 horas. Encadenando esos pasos, pronostica varios días.
+- 🥊 **Le gana por mucho a las dos apuestas fáciles.** A 1 día, en la altura de las ondas de la atmósfera, se equivoca **7 veces menos** que decir "mañana va a estar igual que hoy" (83 contra 577).
+- 🎲 En vez de un solo pronóstico, calcula **50 futuros posibles**. A 5 días, el promedio de los 50 se equivoca un **23% menos** que un pronóstico único.
+- 📏 **Sabe cuánto duda.** Entre los 3 y los 5 días, lo que se abren los 50 futuros es 0,95 veces lo que de verdad se equivoca: casi el ideal, que es 1. En el primer día todavía **duda de más**.
+- 🔥 **Avisa el calor fuera de lo común.** Si se toma un lugar donde hizo calor extremo y otro donde no, a 1 día el modelo le había dado más chances al correcto **93 de cada 100 veces**, y a 5 días, 84.
+- 💻 Todo se entrenó en **una PC de escritorio**, en unas 6 horas.
 
-<details>
-<summary><b>Glosario para no especialistas</b></summary>
+> **Qué está medido y qué no.** Todos los números salen de 2020, un año que la red nunca vio, y llegan hasta los 5 días. El visor muestra 10 días: del día 6 al 10 todavía no hay medición publicada.
 
-| Término | Qué quiere decir |
-|---|---|
-| **Ensamble** | Correr el pronóstico muchas veces con arranques apenas distintos. Cada corrida es un **miembro** o **escenario**. |
-| **Media del ensamble** | El promedio de todos los escenarios: el pronóstico más probable. |
-| **Dispersión** | Cuánto se diferencian los escenarios entre sí. Es la duda del pronóstico. |
-| **ERA5** | La mejor reconstrucción que existe del clima real, hora por hora, desde 1940. Sirve para entrenar y para comparar con "lo que pasó". |
-| **Persistencia** | El pronóstico más tonto posible: "mañana va a estar igual que hoy". Hay que ganarle. |
-| **Climatología** | Otro pronóstico de referencia: el promedio histórico para esa fecha y hora. |
-| **RMSE** | El error típico del pronóstico, en las unidades de la variable. Cuanto más bajo, mejor. |
-| **ACC** | Qué tan bien acierta el patrón de lo que se sale de lo normal. 1 es perfecto; debajo de 0,6 ya no sirve. |
-| **CRPS** | El error de un pronóstico probabilístico: premia acertar y también saber cuánto dudar. |
-| **z500** | La altura a la que la presión baja a 500 hPa, a unos 5,5 km. Sus ondas marcan dónde van los frentes y las tormentas. |
-| **t850** y **t2m** | Temperatura a unos 1,5 km de altura y a 2 metros del suelo. |
-| **Percentil 90 (p90)** | El valor que se supera solo 1 de cada 10 veces en esa época del año: lo "fuera de lo común". |
-| **Brier** y **ROC** | Medidas de qué tan bien se pronostican eventos de sí o no, como "va a hacer calor extremo". |
+## Si nunca oíste hablar de aprendizaje automático
 
-</details>
+Imaginá a alguien que mira el cielo todos los días durante 28 años y anota cómo estaba y cómo quedó 6 horas después. Con el tiempo empieza a adivinar: "cuando el viento viene así y la presión baja acá, en 6 horas pasa esto". Nadie le explicó física. Aprendió de ver muchos ejemplos.
 
-## Resultados en 2020
-
-181 pronósticos de 10 días, uno cada 2 días de 2020, con 50 miembros cada uno.
-
-| Variable | Plazo | Media del ensamble | Pronóstico único | Persistencia | Climatología | ACC |
-|---|---|---|---|---|---|---|
-| Geopotencial en 500 hPa (m²/s²) | 1 día | **83** | 90 | 577 | 809 | 0,99 |
-| | 3 días | **251** | 299 | 924 | 810 | 0,93 |
-| | 5 días | **433** | 562 | 1021 | 810 | 0,77 |
-| Temperatura a 2 m (K) | 1 día | **0,74** | 0,74 | 1,71 | 2,51 | 0,95 |
-| | 5 días | **1,55** | 1,88 | 2,87 | 2,51 | 0,71 |
-| Viento a 10 m (m/s) | 1 día | **0,82** | 0,85 | 3,30 | 3,42 | 0,97 |
-| | 5 días | **2,40** | 3,11 | 4,59 | 3,42 | 0,61 |
-
-<sub>RMSE ponderado por latitud contra ERA5. Persistencia es "mañana igual que hoy" y climatología es el promedio histórico de esa fecha y hora. ACC es la correlación de anomalías del pronóstico único.</sub>
-
-- 🎯 **El ensamble le gana al pronóstico único:** a 5 días, la media de los 50 miembros erra un 23% menos en z500.
-- 📏 **Está calibrado:** entre 3 y 5 días la dispersión de los miembros es 0,95 veces el error real. Cuando el ensamble duda, de verdad hay incertidumbre.
-- 🔥 **Detecta extremos:** para "temperatura sobre el percentil 90" el área bajo la curva ROC es 0,93 a 1 día y 0,84 a 5 días. En Sudamérica da 0,91 y 0,82.
-- 🎲 **La incertidumbre se aprende:** el ruido del modelo, entrenado con CRPS justo y sumado a la perturbación de condiciones iniciales, mejora el CRPS un 8% a 5 días. El ruido solo y el MC dropout quedan subdispersos: sus miembros se parecen demasiado entre sí.
-
-<p align="center"><img src="docs/img/estrategias.png" alt="Comparación de 4 estrategias de ensamble: CRPS, mejora contra solo condiciones iniciales y dispersión sobre error por plazo" width="900"></p>
-
-<details>
-<summary><b>Más figuras: skill por plazo, scorecard, confiabilidad y Buenos Aires</b></summary>
-
-<p align="center"><img src="docs/img/skill.png" alt="RMSE y ACC por plazo contra persistencia y climatología" width="900"></p>
-<p align="center"><img src="docs/img/confiabilidad.png" alt="Diagramas de confiabilidad para eventos sobre el percentil 90" width="800"></p>
-<p align="center"><img src="docs/img/buenos_aires_t2m.png" alt="Pluma de temperatura a 2 m en Buenos Aires desde el 28 de diciembre de 2020" width="760"></p>
-<p align="center"><img src="docs/img/scorecard.png" alt="Scorecard estilo WeatherBench por variable y plazo" width="560"></p>
-<p align="center"><img src="docs/img/t2m_ensamble.gif" alt="Animación de la temperatura a 2 m pronosticada por el ensamble" width="640"></p>
-
-</details>
-
-## Cómo funciona
+Una red neuronal hace eso con números. Prueba adivinar, compara con lo que pasó, se corrige un poquito, y repite millones de veces.
 
 ```mermaid
 flowchart LR
-    A[("ERA5 · WeatherBench 2<br/>1990-2021 · 64×32")] --> B["memmap local<br/>18 canales + forzantes solares"]
-    B --> C["AFNO<br/>mezcla de tokens en Fourier"]
-    C --> D["estado + Δ<br/>(tendencia de 6 h)"]
-    D -- "rollout 1 → 2 → 4 pasos" --> C
-    D --> E["ensamble<br/>condiciones iniciales perturbadas + ruido aprendido"]
-    E --> F["evaluación 2020<br/>RMSE · ACC · CRPS · Brier · ROC"]
-    E --> G["visor interactivo"]
+    A["El clima de un momento<br/>(temperatura, viento, presión…)"] --> B["La red adivina<br/>cómo va a estar en 6 horas"]
+    B --> C["Se compara con<br/>lo que pasó de verdad"]
+    C --> D["Se ajusta un poquito<br/>para errar menos"]
+    D --> A
 ```
 
-1. **El modelo.** Es un *Adaptive Fourier Neural Operator*. Parte el mapa en parches, pasa los tokens a frecuencia con una FFT 2D y los mezcla con un MLP por bloques en el espacio de Fourier, que es una convolución global barata. No predice el estado siguiente sino **el cambio en 6 h**, normalizado por la variabilidad típica de ese cambio. Arranca exactamente en persistencia y aprende la corrección.
-2. **Estabilidad a largo plazo.** Entrena primero a 1 paso y después desenrolla 2 y 4 pasos con la pérdida sobre toda la trayectoria. Así aprende a no amplificar sus propios errores al encadenar pronósticos. La pérdida está ponderada por el coseno de la latitud, porque la grilla sobrerrepresenta los polos.
-3. **La incertidumbre.** En la última etapa la red recibe canales de ruido espacialmente suave y se entrena con **CRPS justo** sobre 2 miembros: aprende a generar futuros distintos pero plausibles. Al pronosticar se suman perturbaciones suaves a las condiciones iniciales.
-4. **La evaluación.** Todo es lo que usa WeatherBench 2. Además hay eventos por región (trópicos, extratrópicos, Sudamérica) con Brier, Brier skill score, confiabilidad y ROC, y un scorecard contra persistencia y climatología.
+Para pronosticar varios días, la red usa su propia respuesta como punto de partida del paso siguiente: 6 horas, 12, 18 y así.
 
-## Correrlo
+**¿Y por qué 50 futuros?** La atmósfera es caótica: una diferencia mínima hoy puede ser una tormenta corrida de lugar en 5 días. Como nunca se sabe con exactitud cómo está el clima ahora, el modelo arranca 50 veces desde puntos apenas distintos. Si los 50 futuros se parecen, el pronóstico es confiable. Si se abren para todos lados, conviene tomarlo con pinzas.
 
-```bash
-git clone https://github.com/francataldi/clima-ensambles && cd clima-ensambles
-pip install -e .[dev]
-python -m pytest -q
-```
+## Qué descubrimos
 
-Para probar todo en minutos y en CPU, con datos sintéticos:
+Las mediciones son 181 pronósticos de 5 días repartidos a lo largo de 2020, con 50 futuros cada uno. La tabla muestra el error típico de cada pronóstico: cuanto más bajo, mejor.
 
-```bash
-python scripts/make_synthetic.py --out data/sintetico
-python scripts/compute_stats.py --data data/sintetico --start 2017-01-01 --end 2018-12-31T18
-python scripts/train.py --config configs/sintetico_cpu.yaml
-```
+### 1. Le gana a las dos apuestas fáciles
 
-Con datos reales. Este es el pipeline completo de `train_3060.bat`:
+Las varas son **"igual que hoy"** (mañana va a estar como hoy) y **"lo normal"** (el promedio histórico para esa fecha y hora). Cualquier pronóstico que valga la pena tiene que ganarles a las dos.
 
-```bash
-python scripts/download_era5.py
-python scripts/compute_stats.py
-python scripts/train.py --config configs/rtx3060.yaml
-python scripts/evaluate.py --checkpoints runs/afno/best.pt --members 50
-python scripts/compare_ensembles.py --checkpoints runs/afno/best.pt --every 12 --members 30
-python scripts/forecast.py --checkpoints runs/afno/best.pt --init 2020-12-28T00
-python scripts/viewer.py --checkpoints runs/afno/best.pt --init 2020-12-28T00 --out docs/index.html
-```
+| Qué se pronostica | Plazo | Promedio de los 50 futuros | Un solo pronóstico | "Igual que hoy" | "Lo normal" |
+|---|---|---|---|---|---|
+| Altura de las ondas de la atmósfera (m²/s²) | 1 día | **83** | 90 | 577 | 809 |
+| | 3 días | **251** | 299 | 924 | 810 |
+| | 5 días | **433** | 562 | 1021 | 810 |
+| Temperatura a 2 m (°C) | 1 día | **0,74** | 0,74 | 1,71 | 2,51 |
+| | 5 días | **1,55** | 1,88 | 2,87 | 2,51 |
+| Viento a 10 m (m/s) | 1 día | **0,82** | 0,85 | 3,30 | 3,42 |
+| | 5 días | **2,40** | 3,11 | 4,59 | 3,42 |
 
-| Paso en una RTX 3060 + Ryzen 5 5600X | Tiempo |
+<p align="center"><img src="docs/img/skill.png" alt="Error por plazo del pronóstico único y del promedio del ensamble, contra persistencia y climatología, para cuatro variables" width="900"></p>
+
+**Por qué importa:** a 5 días el pronóstico todavía se equivoca bastante menos que "lo normal", o sea que sigue aportando información. Estos números todavía no tienen su margen de error: la próxima medición los trae (ver [TECNICO.md](TECNICO.md)).
+
+### 2. Cincuenta futuros valen más que uno
+
+El promedio de los 50 futuros borra los detalles que no se pueden predecir y se queda con lo que todos tienen en común. A 1 día casi no hay diferencia, porque los futuros todavía son parecidos. A 5 días, el promedio se equivoca un **23% menos** en las ondas de la atmósfera y un **18% menos** en temperatura.
+
+<p align="center"><img src="docs/img/scorecard.png" alt="Tabla de colores con la mejora del pronóstico frente a persistencia y climatología, y del promedio del ensamble frente al pronóstico único, por variable y plazo" width="560"></p>
+
+**Por qué importa:** la ventaja crece justo donde más hace falta, que es cuando el pronóstico se vuelve incierto.
+
+### 3. Sabe cuánto duda, salvo al principio
+
+Un buen conjunto de futuros se abre tanto como se equivoca. Si se abre menos, es un sobrador; si se abre más, un inseguro. La medida es el cociente entre las dos cosas, y el ideal es 1.
+
+| Plazo | Cuánto se abren los futuros ÷ cuánto se equivoca | Lectura |
+|---|---|---|
+| 1 día | cerca de 1,2 en las ondas de la atmósfera y de 1,5 en temperatura | duda de más |
+| 3 a 5 días | 0,95 | casi justo |
+
+En las primeras 6 horas los futuros se abren más del doble de lo que hace falta. Una explicación probable es que la perturbación con la que arrancan es más grande que la duda real sobre el estado inicial, y con los días esa diferencia se diluye. Ya hay un experimento armado para ajustarla usando 2019, sin tocar el año de prueba.
+
+### 4. La duda también se aprende
+
+Hay cuatro maneras de fabricar futuros distintos. Se compararon con las mismas fechas, usando una medida que premia acertar y también saber cuánto dudar (CRPS, más bajo es mejor).
+
+| Cómo se generan los futuros | Resultado a 5 días |
 |---|---|
-| Bajar ERA5 1990-2021 (unos 7 GB) | ~2,5 h |
-| Entrenar las 4 etapas (4,7 M de parámetros) | ~6 h, a 71 °C de GPU |
-| Evaluar 2020 con 50 miembros | ~30 min |
+| Arrancar desde puntos apenas distintos | la referencia |
+| Lo anterior **más** un ruido que la red aprendió a usar | **8% mejor** |
+| Solo el ruido aprendido | futuros demasiado parecidos entre sí (cociente de 0,6 a 0,7) |
+| Apagar partes de la red al azar | futuros demasiado parecidos entre sí (cociente de 0,6 a 0,7) |
 
-El entrenamiento retoma solo desde `runs/afno/state.pt` si se corta, y con `--until-stage N` se puede frenar al terminar una etapa.
+<p align="center"><img src="docs/img/estrategias.png" alt="Comparación de cuatro estrategias de ensamble por plazo: CRPS, mejora frente a solo condiciones iniciales y cociente entre dispersión y error" width="900"></p>
 
-## Qué hay en el repo
+**Por qué importa:** combinar las dos fuentes de duda, la del arranque y la del propio modelo, es mejor que cualquiera de las dos sola.
 
-```
-clima/
-  models/afno.py          AFNO: parches, mezcla espectral por bloques, cabeza en cero
-  models/forecaster.py    paso residual, rollout, ruido del modelo, CRPS justo
-  data/                   descarga y conversión de WeatherBench 2, memmap, estadísticas, dataset
-  ensemble.py             perturbaciones de condiciones iniciales y estrategias de ensamble
-  metrics.py, events.py   RMSE, ACC, CRPS, rangos, Brier, confiabilidad, ROC
-  evaluate.py, compare.py evaluación tipo WeatherBench y comparación de estrategias
-  scorecard.py, plots.py  scorecard y figuras
-  viewer.py, viewer.html  visor interactivo autocontenido
-scripts/                  puntos de entrada de cada paso
-configs/                  rtx3060.yaml (real) y sintetico_cpu.yaml (prueba rápida)
-tests/                    55 tests, también en CI sobre Ubuntu y Windows
-```
+### 5. Avisa el calor fuera de lo común
 
-## Limitaciones
+"Calor fuera de lo común" es una temperatura que en ese lugar, en esa época y a esa hora se supera solo 1 de cada 10 veces. El modelo da una probabilidad: cuántos de los 50 futuros la superan.
 
-- La grilla es de 5,6° (64×32), unas 20 veces más gruesa que la de los modelos operativos. Los números no se comparan directamente con IFS, GraphCast o FourCastNet a 0,25°, pero sí contra persistencia y climatología con la misma métrica.
-- Se evalúa contra ERA5, que es un reanálisis y no observaciones directas.
-- Son 18 canales y no incluye precipitación.
+| Dónde | A 1 día | A 5 días |
+|---|---|---|
+| Todo el planeta | 93 de cada 100 | 84 de cada 100 |
+| Sudamérica | 91 de cada 100 | 82 de cada 100 |
 
-## Créditos
+<sub>Cuántas veces, al comparar un caso con calor extremo y uno sin, el modelo le había dado más probabilidad al correcto. Tirar una moneda da 50.</sub>
 
-Datos: [ERA5](https://cds.climate.copernicus.eu/) de Copernicus/ECMWF, a través de [WeatherBench 2](https://sites.research.google/weatherbench/). Costas: [Natural Earth](https://www.naturalearthdata.com/).
-Ideas: AFNO ([Guibas et al., 2021](https://arxiv.org/abs/2111.13587)), FourCastNet ([Pathak et al., 2022](https://arxiv.org/abs/2202.11214)) y el CRPS justo para ensambles ([Ferro, 2014](https://doi.org/10.1002/qj.2270)).
+<p align="center"><img src="docs/img/confiabilidad.png" alt="Diagramas de confiabilidad por región: probabilidad pronosticada contra frecuencia observada para eventos sobre el percentil 90" width="800"></p>
+
+**Por qué importa:** un promedio no sirve para decidir si hay que prepararse para una ola de calor. Una probabilidad sí.
+
+### 6. Queda cerca de lo publicado a esta resolución
+
+El mapa que usa la red es grueso: cada punto cubre unos 600 km. A esa misma resolución hay resultados publicados en el benchmark WeatherBench, medidos con la misma cuenta pero sobre 2017 y 2018, así que la comparación es orientativa.
+
+| Modelo (error en las ondas de la atmósfera, m²/s²) | 3 días | 5 días |
+|---|---|---|
+| Modelo físico de baja resolución (IFS T42) | 489 | 743 |
+| **Este proyecto, un solo pronóstico** | **299** | **562** |
+| Red neuronal publicada (ResNet de Rasp y Thuerey, 2021) | 284 | 499 |
+| Modelo físico de resolución media (IFS T63) | 268 | 463 |
+| **Este proyecto, promedio de 50 futuros** | **251** | **433** |
+| El modelo físico europeo en su versión operativa (IFS), la referencia mundial | 154 | 334 |
+
+<sub>Los valores publicados son de [Rasp y Thuerey (2021)](https://arxiv.org/abs/2008.08626). El promedio de 50 futuros no se compara uno a uno con un pronóstico único, porque promediar suaviza el mapa.</sub>
+
+**Por qué importa:** una PC de escritorio alcanza para quedar en el rango de los modelos de referencia a baja resolución. Está lejos de los modelos de punta, que usan mapas unas 20 veces más finos.
+
+<details>
+<summary><b>Más figuras: Buenos Aires y la animación de la temperatura</b></summary>
+
+<p align="center"><img src="docs/img/buenos_aires_t2m.png" alt="Los 50 futuros de la temperatura en Buenos Aires desde el 28 de diciembre de 2020, contra lo que pasó" width="760"></p>
+<p align="center"><img src="docs/img/t2m_ensamble.gif" alt="Animación de la temperatura pronosticada y de su incertidumbre en todo el planeta" width="640"></p>
+
+</details>
+
+## Cómo se usa el visor
+
+1. Abrí [el visor](https://francataldi.github.io/clima-ensambles/). Muestra un pronóstico que arranca el 28 de diciembre de 2020.
+2. En **Qué mirar** elegís la variable: temperatura, viento, presión y otras de altura.
+3. En **Mostrar** elegís qué ver en el mapa:
+
+| Opción | Qué muestra |
+|---|---|
+| Un escenario | Uno solo de los futuros posibles. Con las flechas pasás de uno a otro. |
+| Promedio | El promedio de todos los futuros: el pronóstico más probable. |
+| Incertidumbre | Dónde los futuros se parecen (claro) y dónde se abren (oscuro). |
+| Lo que pasó | El clima real de ese momento, para comparar. |
+| Cuánto erró | La diferencia entre el promedio y lo que pasó. |
+| Extremos | La chance de superar lo habitual para esa época. |
+
+4. Tocá **cualquier punto del mapa** y a la derecha aparecen los futuros para ese lugar, con la línea negra de lo que pasó.
+5. Con el botón de reproducir avanzás en el tiempo, y en **Forma** cambiás entre mapa plano y globo.
+
+## Glosario
+
+| Término | Qué es, en criollo | En este proyecto |
+|---|---|---|
+| **Red neuronal** | Un programa que aprende de ejemplos en vez de seguir reglas escritas a mano. | Aprende cómo cambia la atmósfera en 6 horas. |
+| **Entrenar** | Mostrarle ejemplos y dejar que se corrija sola. | 28 años de clima, de 1990 a 2017. |
+| **Año de prueba** | Datos que la red nunca vio, para medirla sin trampa. | Todo 2020. |
+| **Ensamble** | Correr el pronóstico muchas veces con arranques apenas distintos. | 50 corridas, cada una es un "futuro posible". |
+| **Dispersión** | Cuánto se diferencian los futuros entre sí. Es la duda del pronóstico. | Se compara con el error real. |
+| **Persistencia** | La apuesta "mañana igual que hoy". | Primera vara a superar. |
+| **Climatología** | La apuesta "lo normal para esta fecha". | Segunda vara a superar. |
+| **ERA5** | La mejor reconstrucción del clima real, hora por hora. | De ahí aprende la red y contra eso se la mide. |
+| **Ondas de la atmósfera (z500)** | La altura a la que la presión baja a la mitad, a unos 5,5 km. Sus ondas marcan por dónde van los frentes y las tormentas. | Es la variable clásica para comparar pronósticos. |
+| **RMSE** | El error típico, en las unidades de lo que se mide. | Los números de las tablas. |
+| **CRPS** | Un error para pronósticos con probabilidades: premia acertar y saber cuánto dudar. | Para comparar formas de armar los futuros. |
+| **Percentil 90** | El valor que se supera solo 1 de cada 10 veces. | Define "calor fuera de lo común". |
+| **Resolución** | El tamaño de cada punto del mapa. | 5,6 grados, unos 600 km. |
+
+## Qué le falta
+
+- El mapa es grueso: sirve para ver frentes y olas de calor grandes, no la lluvia de un barrio.
+- No pronostica lluvia.
+- Se mide contra ERA5, que es una reconstrucción y no la lectura directa de un termómetro.
+- Hay una sola red entrenada. Falta entrenar varias para saber cuánto cambian los números de una a otra.
+
+## Para quien programa
+
+Arquitectura, fórmulas, mediciones con su nombre técnico y cómo correr todo: **[TECNICO.md](TECNICO.md)**.
 
 <div align="center"><sub>Hecho por <a href="https://www.linkedin.com/in/franco-cataldi-gagliardi-2347a9268">Franco Cataldi Gagliardi</a> · también hice <a href="https://github.com/francataldi/truco-senas">agentes de truco que inventan sus propias señas</a></sub></div>
