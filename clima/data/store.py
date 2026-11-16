@@ -74,7 +74,11 @@ class Era5Store:
 
     def climatology_at(self, t: int) -> np.ndarray:
         m, h = self.clim_index(t)
-        return np.asarray(self.climatology[m, h])
+        ts = self.times[t]
+        start = ts.astype("datetime64[M]")
+        frac = float((ts - start) / ((start + np.timedelta64(1, "M")).astype("datetime64[s]") - start.astype("datetime64[s]")))
+        other, weight = ((m + 1) % 12, frac - 0.5) if frac >= 0.5 else ((m - 1) % 12, 0.5 - frac)
+        return (1.0 - weight) * np.asarray(self.climatology[m, h], dtype=np.float32) + weight * np.asarray(self.climatology[other, h], dtype=np.float32)
 
     def latitude_weights(self) -> np.ndarray:
         w = np.cos(np.deg2rad(self.lat))

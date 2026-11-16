@@ -6,7 +6,7 @@ import torch
 from clima.data.store import Era5Store
 from clima.ensemble import EnsembleConfig
 from clima.evaluate import evaluate, save_report
-from clima.plots import plot_event_scores, plot_rank_histograms, plot_reliability, plot_roc, plot_scorecard, plot_skill
+from clima.plots import plot_acc, plot_event_scores, plot_rank_histograms, plot_reliability, plot_roc, plot_scorecard, plot_skill
 from clima.scorecard import save_scorecard, scorecard
 from clima.train import load_members
 
@@ -17,7 +17,7 @@ def main() -> None:
     parser.add_argument("--data", default="data/era5_64x32")
     parser.add_argument("--start", default="2020-01-01")
     parser.add_argument("--end", default="2020-12-31T18")
-    parser.add_argument("--steps", type=int, default=20)
+    parser.add_argument("--steps", type=int, default=40, help="pasos de 6 h por pronostico (40 = 10 dias)")
     parser.add_argument("--every", type=int, default=8)
     parser.add_argument("--max-inits", type=int, default=None)
     parser.add_argument("--members", type=int, default=50)
@@ -26,15 +26,19 @@ def main() -> None:
     parser.add_argument("--mc-dropout", action="store_true")
     parser.add_argument("--batch", type=int, default=25)
     parser.add_argument("--no-events", action="store_true", help="omite Brier, confiabilidad y ROC de eventos extremos")
+    parser.add_argument("--bootstrap", type=int, default=1000, help="remuestreos por bloques para los intervalos de confianza (0 los omite)")
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--device", default="auto")
     parser.add_argument("--out", default="runs/evaluacion")
     args = parser.parse_args()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(("cuda" if torch.cuda.is_available() else "cpu") if args.device == "auto" else args.device)
     store = Era5Store(args.data)
     models = load_members(args.checkpoints, device)
     ens = EnsembleConfig(args.members, args.ic_scale, args.length_scale, args.mc_dropout, args.batch)
-    result = evaluate(models, store, args.start, args.end, args.steps, args.every, ens, args.max_inits, device, event_metrics=not args.no_events)
+    result = evaluate(models, store, args.start, args.end, args.steps, args.every, ens, args.max_inits, device, args.seed, event_metrics=not args.no_events, bootstrap=args.bootstrap)
     out = save_report(result, args.out)
     plot_skill(result, out)
+    plot_acc(result, out)
     plot_rank_histograms(result, out)
     card = scorecard(result)
     save_scorecard(card, out)

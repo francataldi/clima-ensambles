@@ -124,6 +124,7 @@ def plot_skill(result: dict, out_dir: str | Path, variables: tuple[str, ...] = (
                 ("mean_rmse", "media del ensamble", SERIES[1], "-"),
             ):
                 ax.plot(days[1:], _array(result[key])[1:, c], style, color=color, lw=1.8 if style == "-" else 1.4, label=label)
+                _band(ax, days, result, key, c, color)
             ax.set_title(f"{var} ({channel_units(var)})")
             if j == 0:
                 ax.set_ylabel("RMSE")
@@ -139,6 +140,51 @@ def plot_skill(result: dict, out_dir: str | Path, variables: tuple[str, ...] = (
         subtitle = f"{result['inits']} inicializaciones · {result['ensemble']['members']} miembros · arriba: error del control y de la media · abajo: dispersión vs error"
         header(fig, "Skill por plazo", subtitle, handles + more[1:], labels + more_labels[1:])
         path = out / "skill.png"
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+    return path
+
+
+def _band(ax, days: np.ndarray, result: dict, key: str, c: int, color: str) -> None:
+    interval = result.get("intervals", {}).get(key)
+    if interval:
+        ax.fill_between(days[1:], _array(interval["lo"])[1:, c], _array(interval["hi"])[1:, c], color=color, alpha=0.18, lw=0)
+
+
+def plot_acc(result: dict, out_dir: str | Path, variables: tuple[str, ...] = ("z500", "t850", "t2m", "u10"), threshold: float = 0.6) -> Path:
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    names = result["channels"]
+    days = np.asarray(result["lead_hours"]) / 24.0
+    variables = tuple(v for v in variables if v in names) or tuple(names[:4])
+    horizon = result.get("horizon_days", {})
+    with theme():
+        fig, axes = figure(1, len(variables), (3.7, 3.0), header=1.0)
+        for j, var in enumerate(variables):
+            c = names.index(var)
+            ax = axes[0, j]
+            for key, label, color, style in (
+                ("persist_acc", "persistencia", MUTED, "--"),
+                ("det_acc", "control", SERIES[0], "-"),
+                ("mean_acc", "media del ensamble", SERIES[1], "-"),
+            ):
+                ax.plot(days[1:], _array(result[key])[1:, c], style, color=color, lw=1.8 if style == "-" else 1.4, label=label)
+                _band(ax, days, result, key, c, color)
+                reach = (horizon.get(key) or [None] * len(names))[c]
+                if style == "-" and reach is not None and 0 < reach <= days[-1]:
+                    ax.plot([reach, reach], [0, threshold], color=color, lw=1.0, ls=":")
+                    ax.annotate(f"{reach:.1f} d".replace(".", ","), (reach, 0.03), color=color, fontsize=8, ha="center", va="bottom", bbox={"fc": SURFACE, "ec": "none", "pad": 1.0})
+            ax.axhline(threshold, color=AXIS, lw=1.0, zorder=1)
+            ax.set_ylim(0, 1.02)
+            ax.set_title(f"{var}")
+            ax.set_xlabel("plazo (días)")
+            if j == 0:
+                ax.set_ylabel("ACC")
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        level = f" · bandas: bootstrap {round(100 * result['bootstrap']['level'])}%" if "bootstrap" in result else ""
+        subtitle = f"{result['inits']} inicializaciones · {result['ensemble']['members']} miembros · un pronóstico se considera útil mientras el ACC supera {threshold:g}".replace(".", ",") + level
+        header(fig, "Hasta cuándo sirve el pronóstico", subtitle, handles, labels)
+        path = out / "horizonte.png"
         fig.savefig(path, dpi=150)
         plt.close(fig)
     return path
@@ -201,26 +247,29 @@ def animate_field(members: np.ndarray, lat: np.ndarray, lon: np.ndarray, times: 
 
 
 def plot_point_plume(series: np.ndarray, times: list[str], threshold: float, title: str, path: str | Path, truth: np.ndarray | None = None) -> Path:
-    leads = np.arange(series.shape[1])
+    days = np.arange(series.shape[1]) / 4.0
     prob = (series > threshold).mean(axis=0)
-    fig, (a1, a2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True, gridspec_kw={"height_ratios": [3, 1]})
-    for m in range(series.shape[0]):
-        a1.plot(leads, series[m], color="tab:blue", alpha=0.15, lw=1)
-    a1.plot(leads, series.mean(axis=0), color="tab:blue", lw=2.5, label="media del ensamble")
-    if truth is not None:
-        a1.plot(leads, truth, color="k", lw=2, label="lo que pasó")
-    a1.axhline(threshold, color="tab:red", ls="--", lw=1)
-    a1.set_title(title)
-    a1.legend(fontsize=8)
-    a1.grid(alpha=0.3)
-    a2.bar(leads, prob, color="tab:red")
-    a2.set_ylim(0, 1)
-    a2.set_ylabel(f"P > {threshold:g}")
-    step = max(1, len(times) // 10)
-    a2.set_xticks(leads[::step], [times[i] for i in range(0, len(times), step)], rotation=30, ha="right", fontsize=8)
-    fig.tight_layout()
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    lo, hi = np.percentile(series, [10, 90], axis=0)
+    with theme():
+        fig, axes = figure(2, 1, (9.0, 2.5), header=1.0)
+        a1, a2 = axes[0, 0], axes[1, 0]
+        for m in range(series.shape[0]):
+            a1.plot(days, series[m], color=SERIES[0], alpha=0.12, lw=0.8)
+        a1.fill_between(days, lo, hi, color=SERIES[0], alpha=0.18, lw=0, label="rango probable (8 de cada 10 escenarios)")
+        a1.plot(days, series.mean(axis=0), color=SERIES[0], lw=2.2, label="promedio de los escenarios")
+        if truth is not None:
+            a1.plot(days[: len(truth)], truth, color=INK, lw=1.8, label="lo que pasó")
+        a1.axhline(threshold, color=SERIES[7], ls="--", lw=1.0, label=f"umbral de {threshold:g} °C")
+        a1.set_ylabel("°C")
+        a2.bar(days, 100.0 * prob, width=0.2, color=SERIES[7])
+        a2.set_ylim(0, 100)
+        a2.set_ylabel(f"chance de pasar {threshold:g} °C (%)")
+        a2.set_xlabel(f"días desde el inicio ({times[0]} UTC)")
+        a2.sharex(a1)
+        handles, labels = a1.get_legend_handles_labels()
+        header(fig, title, "cada línea fina es un escenario del ensamble", handles, labels)
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
     return Path(path)
 
 
@@ -379,7 +428,13 @@ def strategy_styles(names) -> dict[str, tuple[str, str]]:
     return {n: (SERIES[order.index(n) % len(SERIES)], MARKERS[order.index(n) % len(MARKERS)]) for n in names}
 
 
-def plot_strategy_scores(comparison: dict, out_dir: str | Path, variables: tuple[str, ...] = ("z500", "t850", "t2m", "u10")) -> Path:
+def plot_strategy_scores(
+    comparison: dict,
+    out_dir: str | Path,
+    variables: tuple[str, ...] = ("z500", "t850", "t2m", "u10"),
+    title: str = "Estrategias de ensamble",
+    filename: str = "estrategias.png",
+) -> Path:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     results = comparison["strategies"]
@@ -388,8 +443,10 @@ def plot_strategy_scores(comparison: dict, out_dir: str | Path, variables: tuple
     variables = [v for v in variables if v in first["channels"]] or first["channels"][:4]
     days = np.asarray(first["lead_hours"]) / 24.0
     styles = strategy_styles(list(results))
-    reference = _array(results["ci"]["crps"]) if "ci" in results and len(results) > 1 else None
-    rows = [("crps", "CRPS")] + ([("crpss", "CRPSS frente a solo CI")] if reference is not None else []) + [("spread_skill", "dispersión / RMSE de la media")]
+    ref_name = comparison.get("reference", "ci")
+    reference = _array(results[ref_name]["crps"]) if ref_name in results and len(results) > 1 else None
+    ref_label = labels.get(ref_name, ref_name)
+    rows = [("crps", "CRPS")] + ([("crpss", f"mejora de CRPS frente a\n{ref_label}")] if reference is not None else []) + [("spread_skill", "dispersión / RMSE de la media")]
     with theme():
         fig, axes = figure(len(rows), len(variables), (3.7, 2.8), header=1.0)
         for j, var in enumerate(variables):
@@ -402,6 +459,7 @@ def plot_strategy_scores(comparison: dict, out_dir: str | Path, variables: tuple
                     series["crpss"] = 1.0 - crps / np.maximum(reference[:, c], 1e-12)
                 for i, (key, _) in enumerate(rows):
                     axes[i, j].plot(days[1:], series[key][1:], color=color, marker=marker, ms=3.5, label=labels.get(name, name))
+                    _band(axes[i, j], days, r, key, c, color)
             for i, (key, ylabel) in enumerate(rows):
                 ax = axes[i, j]
                 if key == "spread_skill":
@@ -414,8 +472,8 @@ def plot_strategy_scores(comparison: dict, out_dir: str | Path, variables: tuple
             axes[0, j].set_title(f"{var} ({channel_units(var)})")
         handles, names = axes[0, 0].get_legend_handles_labels()
         members = first["ensemble"]["members"]
-        header(fig, "Estrategias de ensamble", f"{first['inits']} inicializaciones · {members} miembros por estrategia · mismas fechas y semilla", handles, names)
-        path = out / "estrategias.png"
+        header(fig, title, f"{first['inits']} inicializaciones · {members} miembros por estrategia · mismas fechas y semilla", handles, names)
+        path = out / filename
         fig.savefig(path, dpi=150)
         plt.close(fig)
     return path

@@ -12,15 +12,17 @@ def weighted_mean(x: np.ndarray, w: np.ndarray) -> np.ndarray:
     return (x * w[:, None]).mean(axis=(-2, -1))
 
 
+def mse(forecast: np.ndarray, truth: np.ndarray, w: np.ndarray) -> np.ndarray:
+    return weighted_mean((forecast - truth) ** 2, w)
+
+
 def rmse(forecast: np.ndarray, truth: np.ndarray, w: np.ndarray) -> np.ndarray:
-    return np.sqrt(weighted_mean((forecast - truth) ** 2, w))
+    return np.sqrt(mse(forecast, truth, w))
 
 
 def acc(forecast: np.ndarray, truth: np.ndarray, clim: np.ndarray, w: np.ndarray) -> np.ndarray:
     fa = forecast - clim
     oa = truth - clim
-    fa = fa - weighted_mean(fa, w)[..., None, None]
-    oa = oa - weighted_mean(oa, w)[..., None, None]
     num = weighted_mean(fa * oa, w)
     den = np.sqrt(weighted_mean(fa**2, w) * weighted_mean(oa**2, w))
     return num / np.maximum(den, 1e-12)
@@ -37,10 +39,60 @@ def crps_ensemble(members: np.ndarray, truth: np.ndarray, w: np.ndarray, fair: b
     return weighted_mean(skill - spread, w)
 
 
-def ensemble_spread(members: np.ndarray, w: np.ndarray) -> np.ndarray:
+def ensemble_variance(members: np.ndarray, w: np.ndarray) -> np.ndarray:
     M = members.shape[0]
     var = members.var(axis=0, ddof=1) if M > 1 else np.zeros_like(members[0])
-    return np.sqrt(weighted_mean(var, w) * (M + 1) / M)
+    return weighted_mean(var, w) * (M + 1) / M
+
+
+def ensemble_spread(members: np.ndarray, w: np.ndarray) -> np.ndarray:
+    return np.sqrt(ensemble_variance(members, w))
+
+
+def bootstrap_weights(n: int, block: int = 1, reps: int = 1000, seed: int = 0) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    block = int(min(max(block, 1), max(n, 1)))
+    blocks = -(-n // block)
+    starts = rng.integers(0, n, size=(reps, blocks))
+    idx = ((starts[:, :, None] + np.arange(block)[None, None, :]) % n).reshape(reps, -1)[:, :n]
+    counts = np.zeros((reps, n))
+    np.add.at(counts, (np.arange(reps)[:, None], idx), 1.0)
+    return counts / n
+
+
+def bootstrap_means(values: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    values = np.asarray(values, dtype=np.float64)
+    flat = values.reshape(values.shape[0], -1)
+    return (weights @ flat).reshape(weights.shape[0], *values.shape[1:])
+
+
+def percentile_interval(samples: np.ndarray, level: float = 0.95) -> tuple[np.ndarray, np.ndarray]:
+    tail = 100.0 * (1.0 - level) / 2.0
+    lo, hi = np.nanpercentile(samples, [tail, 100.0 - tail], axis=0)
+    return lo, hi
+
+
+def significant(values, digits: int = 6) -> np.ndarray:
+    a = np.asarray(values, dtype=np.float64)
+    ok = np.isfinite(a) & (a != 0)
+    magnitude = np.floor(np.log10(np.abs(np.where(ok, a, 1.0))))
+    scale = 10.0 ** (digits - 1 - magnitude)
+    return np.where(ok, np.round(a * scale) / scale, a)
+
+
+def skill_horizon(lead_hours, curve, threshold: float = 0.6) -> float:
+    hours = np.asarray(lead_hours, dtype=np.float64)
+    curve = np.asarray(curve, dtype=np.float64)
+    ok = np.isfinite(curve) & (hours > 0)
+    hours, curve = hours[ok], curve[ok]
+    if len(curve) == 0 or curve[0] < threshold:
+        return 0.0
+    below = np.flatnonzero(curve < threshold)
+    if len(below) == 0:
+        return float("inf")
+    k = int(below[0])
+    frac = (curve[k - 1] - threshold) / (curve[k - 1] - curve[k])
+    return float((hours[k - 1] + frac * (hours[k] - hours[k - 1])) / 24.0)
 
 
 def rank_histogram(members: np.ndarray, truth: np.ndarray, bins: int | None = None) -> np.ndarray:

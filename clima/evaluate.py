@@ -12,7 +12,7 @@ from .data.dataset import dynamic_forcings
 from .data.store import Era5Store
 from .ensemble import EnsembleConfig, run_ensemble
 from .events import Event, EventScores, Region
-from .metrics import acc, crps_ensemble, ensemble_spread, rank_counts, rmse
+from .metrics import acc, bootstrap_means, bootstrap_weights, crps_ensemble, ensemble_variance, mse, percentile_interval, rank_counts, significant, skill_horizon
 from .models.forecaster import Forecaster
 
 
@@ -21,12 +21,18 @@ def init_indices(store: Era5Store, start: str, end: str, steps: int, every: int)
     return starts[::every]
 
 
+PER_INIT = ("det_mse", "mean_mse", "persist_mse", "clim_mse", "variance", "crps", "det_acc", "mean_acc", "persist_acc")
+ROOTS = {"det_rmse": "det_mse", "mean_rmse": "mean_mse", "persist_rmse": "persist_mse", "clim_rmse": "clim_mse", "spread": "variance"}
+MEANS = ("crps", "det_acc", "mean_acc", "persist_acc")
+ACC_THRESHOLD = 0.6
+
+
 def evaluate(
     models: list[Forecaster],
     store: Era5Store,
     start: str,
     end: str,
-    steps: int = 20,
+    steps: int = 40,
     every: int = 8,
     ens: EnsembleConfig = EnsembleConfig(),
     max_inits: int | None = None,
@@ -36,16 +42,17 @@ def evaluate(
     events: list[Event] | None = None,
     regions: list[Region] | None = None,
     event_metrics: bool = True,
+    bootstrap: int = 1000,
 ) -> dict:
     inits = init_indices(store, start, end, steps, every)
     if max_inits:
         inits = inits[:max_inits]
     w = store.latitude_weights()
     C = len(store.names)
-    acc_keys = ("det_rmse", "mean_rmse", "persist_rmse", "clim_rmse", "crps", "spread", "det_acc", "mean_acc", "persist_acc")
-    sums = {k: np.zeros((steps + 1, C)) for k in acc_keys}
+    per_init = {k: np.zeros((len(inits), steps + 1, C)) for k in PER_INIT}
     ranks = np.zeros((steps + 1, C, ens.members + 1))
     scores = EventScores(store, ens.members, steps, events, regions, verbose=verbose) if event_metrics else None
+    z = store.names.index("z500") if "z500" in store.names else 0
     for n, t in enumerate(inits):
         t = int(t)
         truth = np.array(store.fields[t : t + steps + 1], dtype=np.float32)
@@ -58,38 +65,85 @@ def evaluate(
         det = phys[0]
         mean = phys.mean(axis=0)
         persist = np.broadcast_to(truth[0], truth.shape)
-        sums["det_rmse"] += rmse(det, truth, w)
-        sums["mean_rmse"] += rmse(mean, truth, w)
-        sums["persist_rmse"] += rmse(persist, truth, w)
-        sums["clim_rmse"] += rmse(clim, truth, w)
-        sums["crps"] += crps_ensemble(phys, truth, w)
-        sums["spread"] += ensemble_spread(phys, w)
-        sums["det_acc"] += acc(det, truth, clim, w)
-        sums["mean_acc"] += acc(mean, truth, clim, w)
-        sums["persist_acc"] += acc(persist, truth, clim, w)
+        per_init["det_mse"][n] = mse(det, truth, w)
+        per_init["mean_mse"][n] = mse(mean, truth, w)
+        per_init["persist_mse"][n] = mse(persist, truth, w)
+        per_init["clim_mse"][n] = mse(clim, truth, w)
+        per_init["variance"][n] = ensemble_variance(phys, w)
+        per_init["crps"][n] = crps_ensemble(phys, truth, w)
+        per_init["det_acc"][n] = acc(det, truth, clim, w)
+        per_init["mean_acc"][n] = acc(mean, truth, clim, w)
+        per_init["persist_acc"][n] = acc(persist, truth, clim, w)
         ranks += rank_counts(phys, truth)
         if scores is not None:
             scores.update(t, phys, truth)
         if verbose and (n % 10 == 0 or n == len(inits) - 1):
-            z = store.names.index("z500") if "z500" in store.names else 0
-            print(f"init {n + 1}/{len(inits)} | z500 +5d rmse det {sums['det_rmse'][-1, z] / (n + 1):.1f} media {sums['mean_rmse'][-1, z] / (n + 1):.1f}", flush=True)
-    k = max(len(inits), 1)
+            done = slice(0, n + 1)
+            det_now = np.sqrt(per_init["det_mse"][done, -1, z].mean())
+            mean_now = np.sqrt(per_init["mean_mse"][done, -1, z].mean())
+            print(f"init {n + 1}/{len(inits)} | {store.names[z]} +{steps * 6 // 24}d rmse control {det_now:.1f} media {mean_now:.1f}", flush=True)
+    lead_hours = [6 * i for i in range(steps + 1)]
+    block = max(1, math.ceil(steps / max(every, 1)))
     result = {
         "inits": int(len(inits)),
         "range": [start, end],
-        "lead_hours": [6 * i for i in range(steps + 1)],
+        "lead_hours": lead_hours,
         "channels": store.names,
         "ensemble": asdict(ens),
+        "aggregation": "rmse y dispersion: raiz del promedio sobre inicializaciones (WeatherBench 2); *_por_inicio: promedio de las raices (WeatherBench 1)",
         "rank_histogram_last_lead": {name: (ranks[-1, c] / max(ranks[-1, c].sum(), 1)).round(4).tolist() for c, name in enumerate(store.names)},
         "rank_histogram": (ranks / np.maximum(ranks.sum(-1, keepdims=True), 1)).round(5).tolist(),
     }
-    for key, value in sums.items():
-        result[key] = (value / k).round(5).tolist()
-    result["spread_skill"] = (np.asarray(result["spread"]) / np.maximum(np.asarray(result["mean_rmse"]), 1e-9)).round(4).tolist()
+    result.update({k: significant(v).tolist() for k, v in aggregate(per_init).items()})
+    result["horizon_days"] = horizons(result, lead_hours)
+    if bootstrap and len(inits) > 1:
+        result["bootstrap"] = {"reps": int(bootstrap), "block": int(block), "level": 0.95}
+        result["intervals"] = intervals(per_init, lead_hours, block, bootstrap, seed)
     if scores is not None:
         result["regions"] = {r.name: {"label": r.label, "lat": list(r.lat), "lon": list(r.lon)} for r in scores.regions}
         result["events"] = jsonable(scores.summary())
+    result["per_init"] = {"times": store.times[inits].astype("datetime64[s]").astype(np.int64), **per_init}
     return result
+
+
+def aggregate(per_init: dict, weights: np.ndarray | None = None) -> dict:
+    def average(values: np.ndarray) -> np.ndarray:
+        if weights is None:
+            return values.mean(axis=0) if len(values) else np.zeros(values.shape[1:])
+        return bootstrap_means(values, weights)
+
+    out = {name: np.sqrt(average(per_init[source])) for name, source in ROOTS.items()}
+    out.update({name: average(per_init[name]) for name in MEANS})
+    out["spread_skill"] = out["spread"] / np.maximum(out["mean_rmse"], 1e-9)
+    out["mean_gain_pct"] = np.where(out["det_rmse"] > 0, 100.0 * (1.0 - out["mean_rmse"] / np.maximum(out["det_rmse"], 1e-9)), 0.0)
+    if weights is None:
+        out["det_rmse_por_inicio"] = average(np.sqrt(per_init["det_mse"]))
+        out["mean_rmse_por_inicio"] = average(np.sqrt(per_init["mean_mse"]))
+    return out
+
+
+def horizons(curves: dict, lead_hours: list[int], threshold: float = ACC_THRESHOLD) -> dict:
+    out = {"threshold": threshold}
+    for key in ("det_acc", "mean_acc"):
+        table = np.asarray(curves[key], dtype=np.float64)
+        out[key] = [skill_horizon(lead_hours, table[:, c], threshold) for c in range(table.shape[1])]
+    return out
+
+
+def intervals(per_init: dict, lead_hours: list[int], block: int, reps: int, seed: int = 0, level: float = 0.95) -> dict:
+    n = len(per_init["crps"])
+    samples = aggregate(per_init, bootstrap_weights(n, block, reps, seed))
+    out = {}
+    for key, values in samples.items():
+        lo, hi = percentile_interval(values, level)
+        out[key] = {"lo": significant(lo).tolist(), "hi": significant(hi).tolist()}
+    out["horizon_days"] = {}
+    for key in ("det_acc", "mean_acc"):
+        days = np.array([[skill_horizon(lead_hours, rep[:, c], ACC_THRESHOLD) for c in range(rep.shape[1])] for rep in samples[key]])
+        days = np.minimum(days, lead_hours[-1] / 24.0)
+        lo, hi = percentile_interval(days, level)
+        out["horizon_days"][key] = {"lo": lo.tolist(), "hi": hi.tolist()}
+    return out
 
 
 def jsonable(x):
@@ -142,6 +196,10 @@ def write_json(path: str | Path, obj) -> Path:
 def save_report(result: dict, out_dir: str | Path) -> Path:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    result = dict(result)
+    per_init = result.pop("per_init", None)
+    if per_init is not None:
+        np.savez_compressed(out / "por_inicio.npz", **per_init)
     write_json(out / "metrics.json", result)
     lines = ["variable,lead_h,det_rmse,mean_rmse,persist_rmse,clim_rmse,crps,spread,spread_skill,det_acc,mean_acc"]
     for c, name in enumerate(result["channels"]):
