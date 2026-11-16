@@ -7,7 +7,7 @@ from clima.train import TrainConfig, train, train_members
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", default="configs/rtx3060.yaml")
+    parser.add_argument("--config", default="configs/principal.yaml")
     parser.add_argument("--seeds", type=int, nargs="*", default=None)
     parser.add_argument("--fresh", action="store_true")
     parser.add_argument("--until-stage", type=int, default=None, help="entrena hasta esta etapa inclusive (0 es la primera) y se detiene; despues se retoma desde state.pt")
